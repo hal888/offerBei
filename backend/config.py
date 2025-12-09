@@ -6,7 +6,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 # DeepSeek API配置
 DEEPSEEK_CONFIG = {
-    "api_key": "sk-e0b0697fb8cb4ecb857ff91a46914084",  # 这里需要替换为实际的DeepSeek API密钥
+    "api_key": "",  # 这里需要替换为实际的DeepSeek API密钥
     "base_url": "https://api.deepseek.com/v1",
     "model": "deepseek-chat"
 }
