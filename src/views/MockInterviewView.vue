@@ -33,20 +33,7 @@
             </div>
           </div>
 
-          <div class="option-group">
-            <label>交互模式</label>
-            <div class="interaction-modes">
-              <button 
-                v-for="mode in interactionModes" 
-                :key="mode" 
-                :class="['mode-btn', { active: selectedMode === mode }]" 
-                @click="selectedMode = mode"
-              >
-                <span class="mode-icon">{{ mode === '语音模式' ? '🎤' : '💬' }}</span>
-                {{ mode }}
-              </button>
-            </div>
-          </div>
+
 
           <div class="option-group">
             <label>面试时长</label>
@@ -74,7 +61,6 @@
       <div class="interview-header">
         <div class="interview-info">
           <span class="style-badge">{{ selectedStyle }}</span>
-          <span class="mode-badge">{{ selectedMode }}</span>
           <span class="duration-badge">{{ selectedDuration }}分钟</span>
         </div>
         <div class="interview-actions">
@@ -110,36 +96,37 @@
           </div>
 
           <div class="chat-input-area">
-            <div v-if="selectedMode === '文字模式'" class="text-input-container">
+            <div class="text-input-container">
+              <div class="voice-status-indicator" :class="recordingStatus">
+                <span class="status-icon">{{ 
+                  recordingStatus === 'recording' ? '🔴' : 
+                  recordingStatus === 'processing' ? '⏳' : 
+                  recordingStatus === 'completed' ? '✅' : 
+                  recordingStatus === 'starting' ? '📤' : '🎤' 
+                }}</span>
+                <span class="status-text">{{ 
+                  recordingStatus === 'recording' ? '录音中...' : 
+                  recordingStatus === 'processing' ? '处理中...' : 
+                  recordingStatus === 'completed' ? '已完成' : 
+                  recordingStatus === 'starting' ? '准备中...' : '点击开始录音' 
+                }}</span>
+              </div>
               <textarea 
                 v-model="inputMessage" 
                 placeholder="请输入您的回答..."
                 rows="3"
                 @keydown.enter.prevent="sendMessage"
               ></textarea>
-              <button class="send-btn" @click="sendMessage">
-                <span class="send-icon">📤</span>
-                发送
-              </button>
-            </div>
-            
-            <div v-else class="voice-input-container">
-              <!-- 麦克风设备选择 -->
-              <div class="device-selector" v-if="availableAudioDevices.length > 1">
-                <label for="audio-device">选择麦克风设备：</label>
-                <select id="audio-device" v-model="selectedDeviceId" @change="detectAudioDevices">
-                  <option v-for="device in availableAudioDevices" :key="device.deviceId" :value="device.deviceId">
-                    {{ device.label || `麦克风 ${availableAudioDevices.indexOf(device) + 1}` }}
-                  </option>
-                </select>
+              <div class="input-actions">
+                <button class="voice-btn" :class="recordingStatus" @click="toggleRecording">
+                  <span class="voice-icon">{{ isRecording ? '🔴' : '🎤' }}</span>
+                  {{ isRecording ? '停止录音' : '开始录音' }}
+                </button>
+                <button class="send-btn" @click="sendMessage">
+                  <span class="send-icon">📤</span>
+                  发送
+                </button>
               </div>
-              <div class="voice-status">
-                <span class="voice-icon">{{ isRecording ? '🔴' : '🎤' }}</span>
-                <span class="voice-text">{{ isRecording ? '正在录音...' : '点击开始录音' }}</span>
-              </div>
-              <button class="voice-btn" @click="toggleRecording">
-                {{ isRecording ? '停止录音' : '开始录音' }}
-              </button>
             </div>
           </div>
         </div>
@@ -287,7 +274,6 @@ const isPaused = ref(false)
 const isRecording = ref(false)
 const showReport = ref(false)
 const selectedStyle = ref('温柔HR')
-const selectedMode = ref('文字模式')
 const selectedDuration = ref(15)
 const inputMessage = ref('')
 const messages = ref([])
@@ -312,13 +298,12 @@ const interviewerStyles = [
   { name: '综合面试官', icon: '🤔', description: '平衡风格，适合综合练习' }
 ]
 
-const interactionModes = ['文字模式', '语音模式']
-const durations = [2, 15, 30, 45, 60]
+const durations = [15, 30, 45, 60]
 
 // 监听面试设置变化，实时从后端获取匹配的历史记录
 const setupWatchers = () => {
   // 当面试设置变化时，实时从后端获取匹配的历史记录
-  watch([selectedStyle, selectedMode, selectedDuration], () => {
+  watch([selectedStyle, selectedDuration], () => {
     fetchMockInterviewHistory()
   })
 }
@@ -348,56 +333,8 @@ const reportData = ref({
 const interviewHistory = ref([])
 
 const startInterview = async () => {
-  // 如果选择语音模式，检测麦克风设备
-  if (selectedMode.value === '语音模式') {
-    isLoading.value = true
-    loadingMessage.value = '正在检测麦克风设备...'
-    
-    try {
-      // 检测麦克风设备
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('您的浏览器不支持麦克风录音功能，请使用Chrome、Firefox或Safari等现代浏览器')
-      }
-      
-      // 请求麦克风权限并检测设备
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      // 释放临时流
-      stream.getTracks().forEach(track => track.stop())
-      
-      // 检测可用设备数量
-      const devices = await navigator.mediaDevices.enumerateDevices()
-      const audioDevices = devices.filter(device => device.kind === 'audioinput')
-      
-      if (audioDevices.length === 0) {
-        throw new Error('未检测到麦克风设备，请连接麦克风后重试')
-      }
-      
-      // 设备正常，继续开始面试
-      await startInterviewProcess()
-    } catch (error) {
-      console.error('麦克风设备检测失败:', error)
-      isLoading.value = false
-      
-      // 分类处理不同的错误类型
-      let errorMessage = '麦克风设备检测失败，请检查设备连接和权限设置'
-      
-      if (error.name === 'NotFoundError' || error.message.includes('未检测到')) {
-        errorMessage = '未检测到麦克风设备，请连接麦克风后重试'
-      } else if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-        errorMessage = '麦克风权限被拒绝，请在浏览器设置中允许麦克风访问'
-      } else if (error.name === 'NotReadableError') {
-        errorMessage = '麦克风设备被占用，请关闭其他使用麦克风的应用'
-      } else if (error.name === 'OverconstrainedError') {
-        errorMessage = '无法满足录音设备要求，请尝试调整麦克风设置'
-      }
-      
-      alert(errorMessage)
-      return
-    }
-  } else {
-    // 文字模式，直接开始面试
-    startInterviewProcess()
-  }
+  // 直接开始面试，不再根据模式检测设备
+  await startInterviewProcess()
 }
 
 // 实际开始面试的处理函数
@@ -413,7 +350,6 @@ const startInterviewProcess = async () => {
     const response = await axios.post('http://127.0.0.1:5000/api/mock-interview/start', {
       userId: userId,
       style: selectedStyle.value,
-      mode: selectedMode.value,
       duration: selectedDuration.value
     })
     
@@ -470,7 +406,6 @@ const endInterview = () => {
     interviewId: interviewId.value,
     userId: userId,
     style: selectedStyle.value,
-    mode: selectedMode.value,
     duration: selectedDuration.value
   })
   .then(response => {
@@ -550,39 +485,154 @@ const sendMessage = () => {
   })
 }
 
-// 录音相关变量
-let mediaRecorder = null
-let audioChunks = []
-let audioStream = null
-const availableAudioDevices = ref([])
-const selectedDeviceId = ref('')
+// 语音识别相关变量
+let recognition = null
+let isSpeechSupported = ref(true)
+// 添加语音识别状态管理变量（在组件作用域内定义）
+let isRecognitionStarting = false
+let isRecognitionRunning = false
+// 添加录音状态指示
+const recordingStatus = ref('idle') // idle, recording, processing, completed
+// 保存当前录音的临时文本，用于追加功能
+let currentRecordingText = ''
+// 保存上一次最终结果的位置，用于实现追加功能
+let lastFinalIndex = 0
 
-// 检测可用麦克风设备
-const detectAudioDevices = async () => {
-  try {
-    // 请求麦克风权限
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    // 释放临时流
-    stream.getTracks().forEach(track => track.stop())
+// 初始化语音识别
+const initSpeechRecognition = () => {
+  // 检查浏览器是否支持语音识别
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+  const SpeechGrammarList = window.SpeechGrammarList || window.webkitSpeechGrammarList
+  const SpeechRecognitionEvent = window.SpeechRecognitionEvent || window.webkitSpeechRecognitionEvent
+  
+  if (!SpeechRecognition) {
+    isSpeechSupported.value = false
+    realTimeTips.value.push('您的浏览器不支持语音识别功能，请使用Chrome或Edge等现代浏览器')
+    return
+  }
+  
+  console.log('创建语音识别实例...')
+  // 创建语音识别实例
+  recognition = new SpeechRecognition()
+  
+  // 设置语音识别选项
+  recognition.continuous = true // 持续识别，避免停顿几秒后自动终止
+  recognition.interimResults = true // 返回中间结果
+  recognition.lang = 'zh-CN' // 设置为中文
+  recognition.maxAlternatives = 1 // 只返回一个结果
+  
+  // 监听语音识别开始事件
+  recognition.onstart = () => {
+    console.log('✅ 语音识别已开始')
+    isRecognitionStarting = false
+    isRecognitionRunning = true
+    recordingStatus.value = 'recording'
+    realTimeTips.value.push('🎤 录音中...')
+    // 保存当前输入框内容，用于后续追加
+    currentRecordingText = inputMessage.value
+    // 保存当前录音的起始索引，用于标点符号处理
+    lastFinalIndex = event ? event.results.length : 0
+  }
+  
+  // 监听语音识别结果事件
+  recognition.onresult = (event) => {
+    console.log('🔊 收到语音识别结果事件:', event)
     
-    // 获取所有音频输入设备
-    const devices = await navigator.mediaDevices.enumerateDevices()
-    availableAudioDevices.value = devices.filter(device => device.kind === 'audioinput')
+    // 初始化当前录音的转录文本
+    let newTranscript = ''
+    let hasFinalResult = false
     
-    // 设置默认设备
-    if (availableAudioDevices.value.length > 0) {
-      selectedDeviceId.value = availableAudioDevices.value[0].deviceId
-      realTimeTips.value.push(`检测到 ${availableAudioDevices.value.length} 个麦克风设备，已选择默认设备`)
-    } else {
-      realTimeTips.value.push('未检测到麦克风设备，请连接麦克风后重试')
+    // 遍历所有结果（包括中间结果）
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const result = event.results[i]
+      const item = result[0]
+      
+      console.log(`结果 ${i}:`, {
+        transcript: item.transcript,
+        isFinal: result.isFinal,
+        confidence: item.confidence
+      })
+      
+      // 拼接转录文本
+      newTranscript += item.transcript
+      
+      // 如果是最终结果
+      if (result.isFinal) {
+        hasFinalResult = true
+        lastFinalIndex = i
+        
+        // 添加标点符号处理：在最终结果末尾添加适当的标点
+        // 检查是否已经有标点符号
+        const lastChar = newTranscript.slice(-1)
+        if (!['。', '，', '！', '？', '；', '.', ',', '!', '?', ';'].includes(lastChar)) {
+          // 如果是较长的文本，添加句号；否则添加逗号
+          if (newTranscript.length > 10) {
+            newTranscript += '。'
+          } else {
+            newTranscript += '，'
+          }
+        }
+      }
     }
-  } catch (error) {
-    console.error('检测麦克风设备失败:', error)
-    realTimeTips.value.push('无法访问麦克风设备，请检查权限设置')
+    
+    console.log('📝 当前录音转录文本:', newTranscript)
+    
+    // 更新输入框内容：当前输入框内容 + 新转录的内容
+    const fullText = currentRecordingText + newTranscript
+    console.log('✅ 更新输入框内容:', fullText)
+    inputMessage.value = fullText
+    
+    // 如果有最终结果，更新当前录音文本，以便下次追加
+    if (hasFinalResult) {
+      currentRecordingText = fullText
+    }
+  }
+  
+  // 监听语音识别错误事件
+  recognition.onerror = (event) => {
+    console.error('❌ 语音识别错误:', event.error)
+    recordingStatus.value = 'idle'
+    
+    // 只处理真正的致命错误，忽略网络错误等非致命错误
+    const fatalErrors = ['not-allowed', 'audio-capture']
+    
+    if (fatalErrors.includes(event.error)) {
+      let errorMessage = '语音识别失败，请重试'
+      
+      if (event.error === 'not-allowed') {
+        errorMessage = '麦克风权限被拒绝，请在浏览器设置中允许麦克风访问'
+      } else if (event.error === 'audio-capture') {
+        errorMessage = '未检测到麦克风设备'
+      }
+      
+      realTimeTips.value.push(errorMessage)
+      isRecording.value = false
+    } 
+    else {
+      console.log(`⚠️  非致命错误: ${event.error}，继续录音...`)
+      
+      // 对于网络错误，显示友好提示，但不停止录音
+      if (event.error === 'network') {
+        realTimeTips.value.push('网络连接暂时不稳定，语音识别正在尝试恢复...')
+      }
+    }
+  }
+  
+  // 监听语音识别结束事件
+  recognition.onend = () => {
+    console.log('⏹️  语音识别已结束')
+    isRecognitionRunning = false
+    recordingStatus.value = 'completed'
+    realTimeTips.value.push('✅ 录音已完成')
+    
+    // 重置状态
+    setTimeout(() => {
+      recordingStatus.value = 'idle'
+    }, 1000)
   }
 }
 
-// 在组件挂载时检测设备
+// 在组件挂载时初始化语音识别
 onMounted(() => {
   realTimeTips.value = [
     '保持微笑，展现自信',
@@ -596,156 +646,99 @@ onMounted(() => {
   // 获取用户的模拟面试历史记录
   fetchMockInterviewHistory()
   
-  // 页面加载时不再自动检测麦克风设备，只在选择语音模式并点击开始面试时检测
-  // 移除设备变化监听
+  // 初始化语音识别
+  initSpeechRecognition()
 })
 
-// 组件卸载时移除监听
+// 组件卸载时停止语音识别
 onUnmounted(() => {
-  // 不再需要移除设备变化监听，因为我们已经不在onMounted中添加这个监听了
   if (timer) {
     clearInterval(timer)
+  }
+  if (recognition && recognition.state === 'running') {
+    recognition.stop()
   }
 })
 
 const toggleRecording = async () => {
-  isRecording.value = !isRecording.value
+  if (!isSpeechSupported.value) {
+    alert('您的浏览器不支持语音识别功能，请使用Chrome或Edge等现代浏览器')
+    return
+  }
   
   if (isRecording.value) {
-    realTimeTips.value.push('录音已开始，请开始回答')
-    await startRecording()
-  } else {
-    realTimeTips.value.push('录音已结束')
-    stopRecording()
-  }
-}
-
-const startRecording = async () => {
-  try {
-    // 检查浏览器支持
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      throw new Error('您的浏览器不支持麦克风录音功能，请使用Chrome、Firefox或Safari等现代浏览器')
+    // 停止录音
+    console.log('停止录音...')
+    recordingStatus.value = 'processing'
+    realTimeTips.value.push('⏳ 正在处理录音...')
+    
+    // 停止语音识别
+    if (recognition && (recognition.state === 'running' || recognition.state === 'starting')) {
+      recognition.stop()
     }
     
-    // 不再自动检测设备，因为我们已经在startInterview函数中检测过了
-    
-    // 配置音频约束
-    const audioConstraints = {
-      audio: {
-        deviceId: selectedDeviceId.value ? { exact: selectedDeviceId.value } : true,
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true
-      }
-    }
-    
-    // 获取用户媒体设备
-    audioStream = await navigator.mediaDevices.getUserMedia(audioConstraints)
-    
-    // 创建MediaRecorder实例
-    mediaRecorder = new MediaRecorder(audioStream, {
-      mimeType: 'audio/webm;codecs=opus'
-    })
-    
-    // 清空之前的录音数据
-    audioChunks = []
-    
-    // 处理录音数据
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        audioChunks.push(event.data)
-      }
-    }
-    
-    // 开始录音
-    mediaRecorder.start(1000) // 每1秒推送一次数据
-    
-    // 处理录音结束
-    mediaRecorder.onstop = () => {
-      processRecording()
-    }
-  } catch (error) {
-    console.error('开始录音失败:', error)
-    
-    // 分类处理不同的错误类型
-    let errorMessage = '录音设备访问失败，请检查权限设置'
-    
-    if (error.name === 'NotFoundError') {
-      errorMessage = '未找到麦克风设备，请确保您已连接麦克风并选择正确的设备'
-    } else if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-      errorMessage = '麦克风权限被拒绝，请在浏览器设置中允许麦克风访问'
-    } else if (error.name === 'NotReadableError') {
-      errorMessage = '麦克风设备被占用，请关闭其他使用麦克风的应用'
-    } else if (error.name === 'OverconstrainedError') {
-      errorMessage = '无法满足录音设备要求，请尝试选择其他麦克风设备'
-    }
-    
-    realTimeTips.value.push(errorMessage)
     isRecording.value = false
-  }
-}
-
-const stopRecording = () => {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop()
-  }
-  
-  // 关闭媒体流
-  if (audioStream) {
-    audioStream.getTracks().forEach(track => track.stop())
-    audioStream = null
-  }
-}
-
-const processRecording = async () => {
-  try {
-    isLoading.value = true
-    loadingMessage.value = '正在识别语音...'
     
-    // 创建音频Blob
-    const audioBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' })
+    // 延迟更新状态，让用户看到处理过程
+    setTimeout(() => {
+      recordingStatus.value = 'completed'
+      realTimeTips.value.push('✅ 录音已完成')
+      
+      // 1秒后恢复空闲状态
+      setTimeout(() => {
+        recordingStatus.value = 'idle'
+      }, 1000)
+    }, 500)
+  } else {
+    // 开始录音
+    isRecording.value = true
+    recordingStatus.value = 'starting'
+    realTimeTips.value.push('📤 正在准备录音...')
     
-    // 创建FormData发送到后端
-    const formData = new FormData()
-    formData.append('audio', audioBlob, 'recording.webm')
-    formData.append('interviewId', interviewId.value)
-    formData.append('questionId', currentQuestion.value)
-    
-    // 发送到后端进行语音识别和处理
-    const response = await axios.post('http://127.0.0.1:5000/api/mock-interview/voice-answer', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
+    try {
+      // 检查浏览器是否支持权限查询API
+      if (navigator.permissions && navigator.permissions.query) {
+        // 查询麦克风权限状态
+        const permissionStatus = await navigator.permissions.query({ name: 'microphone' })
+        
+        if (permissionStatus.state === 'denied') {
+          // 权限已被拒绝，提醒用户去设置
+          realTimeTips.value.push('❌ 麦克风权限被拒绝，请在浏览器设置中允许麦克风访问')
+          isRecording.value = false
+          recordingStatus.value = 'idle'
+          // 可以添加一个更明显的提示
+          alert('麦克风权限被拒绝，请在浏览器设置中允许麦克风访问后重试')
+          return
+        } 
+        // 如果是prompt状态，会在getUserMedia时弹出权限请求
       }
-    })
-    
-    const data = response.data
-    
-    // 添加用户消息（语音转文字结果）
-    messages.value.push({
-      sender: 'user',
-      text: data.transcribedText,
-      time: getCurrentTime()
-    })
-    
-    // 添加AI回复
-    messages.value.push({
-      sender: 'ai',
-      text: `感谢您的回答。${data.feedback} 接下来请您回答：${data.nextQuestion.content}`,
-      time: getCurrentTime()
-    })
-    
-    askedQuestions.value.push(data.nextQuestion.content)
-    currentQuestion.value++
-    scrollToBottom()
-    
-    if (currentQuestion.value > totalQuestions.value) {
-      endInterview()
+      
+      // 请求麦克风权限
+      await navigator.mediaDevices.getUserMedia({ audio: true })
+      
+      // 开始语音识别
+      console.log('开始语音识别...')
+      recognition.start()
+    } catch (error) {
+      console.error('开始录音失败:', error)
+      let errorMessage = '无法访问麦克风设备，请检查权限设置'
+      
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        errorMessage = '麦克风权限被拒绝，请在浏览器设置中允许麦克风访问'
+        // 添加更明显的提示
+        alert('麦克风权限被拒绝，请在浏览器设置中允许麦克风访问后重试')
+      } else if (error.name === 'NotFoundError' || error.message.includes('No device found')) {
+        errorMessage = '未检测到麦克风设备，请连接麦克风后重试'
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = '麦克风设备被占用，请关闭其他使用麦克风的应用'
+      } else if (error.name === 'OverconstrainedError') {
+        errorMessage = '无法满足录音设备要求，请尝试调整麦克风设置'
+      }
+      
+      realTimeTips.value.push(`❌ ${errorMessage}`)
+      isRecording.value = false
+      recordingStatus.value = 'idle'
     }
-  } catch (error) {
-    console.error('处理录音失败:', error)
-    realTimeTips.value.push('语音处理失败，请重试')
-  } finally {
-    isLoading.value = false
   }
 }
 
@@ -862,12 +855,11 @@ const fetchMockInterviewHistory = async () => {
     const userId = localStorage.getItem('userId')
     if (!userId) return
     
-    // 发送当前选择的style、mode和duration参数
+    // 发送当前选择的style和duration参数
     const response = await axios.get(`http://127.0.0.1:5000/api/mock-interview/history`, {
       params: {
         userId: userId,
         style: selectedStyle.value,
-        mode: selectedMode.value,
         duration: selectedDuration.value
       }
     })
@@ -893,7 +885,6 @@ const checkAndLoadMatchingReport = () => {
   console.log('当前历史记录数量:', interviewHistory.value.length)
   console.log('当前选择的设置:', {
     style: selectedStyle.value,
-    mode: selectedMode.value,
     duration: selectedDuration.value
   })
   
@@ -909,7 +900,6 @@ const checkAndLoadMatchingReport = () => {
   
   // 检查返回的记录是否与当前选择的设置匹配
   if (matchingHistory.style === selectedStyle.value && 
-      matchingHistory.mode === selectedMode.value && 
       Math.abs(matchingHistory.duration - selectedDuration.value) <= 5) {
     
     if (matchingHistory.reportData) {
@@ -982,9 +972,10 @@ onUnmounted(() => {
 }
 
 .interviewer-styles {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  display: flex;
   gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .style-card {
@@ -995,6 +986,9 @@ onUnmounted(() => {
   cursor: pointer;
   transition: all 0.3s ease;
   text-align: center;
+  min-width: 200px;
+  flex: 1;
+  max-width: 300px;
 }
 
 .style-card:hover {
@@ -1266,8 +1260,76 @@ onUnmounted(() => {
 
 .text-input-container {
   display: flex;
+  flex-direction: column;
   gap: 15px;
-  align-items: flex-end;
+  align-items: stretch;
+}
+
+.voice-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.voice-status-indicator.idle {
+  background-color: #f8f9fa;
+  color: #666;
+  border: 1px solid #ddd;
+}
+
+.voice-status-indicator.starting {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #90caf9;
+}
+
+.voice-status-indicator.recording {
+  background-color: #ffebee;
+  color: #d32f2f;
+  border: 1px solid #ef5350;
+  animation: pulse 1s infinite;
+}
+
+.voice-status-indicator.processing {
+  background-color: #fff3e0;
+  color: #f57c00;
+  border: 1px solid #ffb74d;
+}
+
+.voice-status-indicator.completed {
+  background-color: #e8f5e8;
+  color: #388e3c;
+  border: 1px solid #81c784;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.status-icon {
+  font-size: 1.2rem;
+}
+
+.status-text {
+  flex: 1;
+}
+
+.voice-btn.recording {
+  background-color: #d32f2f;
+  animation: pulse 1s infinite;
+}
+
+.input-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: flex-end;
 }
 
 .text-input-container textarea {

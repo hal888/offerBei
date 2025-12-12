@@ -24,9 +24,9 @@ def parse_resume_result(content):
     # with open('response.txt', 'w', encoding='utf-8') as f:
     #     f.write(content)
     
-    print("=== 开始JSON解析 ===")
-    print(f"原始响应长度：{len(content)}字符")
-    print(f"响应内容：{content}")
+    # print("=== 开始JSON解析 ===")
+    # print(f"原始响应长度：{len(content)}字符")
+    # print(f"响应内容：{content}")
     
     try:
         # 1. 清理可能的额外内容，只保留JSON部分
@@ -68,23 +68,23 @@ def parse_resume_result(content):
         # 移除可能的控制字符，但保留Unicode字符
         json_content = re.sub(r'[\x00-\x1f\x7f]', '', json_content)  # 只移除控制字符
         
-        print(f"✓ 清理后JSON：{json_content[:100]}...")
+        # print(f"✓ 清理后JSON：{json_content[:100]}...")
         
         # 3. 解析JSON
         json_result = json.loads(json_content)
-        print("✓ JSON解析成功！")
+        # print("✓ JSON解析成功！")
         
         # 4. 验证并提取所需字段
         if not isinstance(json_result, dict):
             print("❌ JSON结果不是对象类型")
             return result
         
-        print(f"✓ 提取到字段：{list(json_result.keys())}")
+        # print(f"✓ 提取到字段：{list(json_result.keys())}")
         
         # 提取评分
         if 'score' in json_result and isinstance(json_result['score'], (int, float)):
             result['score'] = int(json_result['score'])
-            print(f"✓ 提取评分：{result['score']}")
+            # print(f"✓ 提取评分：{result['score']}")
         
         # 提取诊断意见
         if 'diagnosis' in json_result and isinstance(json_result['diagnosis'], list):
@@ -98,12 +98,12 @@ def parse_resume_result(content):
                         "title": item['title'],
                         "description": item['description']
                     })
-            print(f"✓ 提取诊断意见：{len(result['diagnosis'])}条")
+            # print(f"✓ 提取诊断意见：{len(result['diagnosis'])}条")
         
         # 提取关键词
         if 'keywords' in json_result and isinstance(json_result['keywords'], list):
             result['keywords'] = [k.strip() for k in json_result['keywords'] if isinstance(k, str) and k.strip()]
-            print(f"✓ 提取关键词：{len(result['keywords'])}个")
+            # print(f"✓ 提取关键词：{len(result['keywords'])}个")
         
         # 提取STAR法则重写
         if 'starRewrite' in json_result and isinstance(json_result['starRewrite'], list):
@@ -115,14 +115,14 @@ def parse_resume_result(content):
                         "action": item.get('action', '').strip(),
                         "result": item.get('result', '').strip()
                     })
-            print(f"✓ 提取STAR重写：{len(result['starRewrite'])}条")
+            # print(f"✓ 提取STAR重写：{len(result['starRewrite'])}条")
         
         # 提取优化后简历
         if 'optimizedResume' in json_result and isinstance(json_result['optimizedResume'], str):
             result['optimizedResume'] = json_result['optimizedResume'].strip()
-            print(f"✓ 提取优化后简历：{len(result['optimizedResume'])}字符")
+            # print(f"✓ 提取优化后简历：{len(result['optimizedResume'])}字符")
         
-        print("=== JSON解析完成 ===")
+        # print("=== JSON解析完成 ===")
         return result
         
     except json.JSONDecodeError as e:

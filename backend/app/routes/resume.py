@@ -57,7 +57,7 @@ def analyze():
     
     # 解析API返回结果
     parsed_result = parse_resume_result(api_result)
-    print(parsed_result)
+    # print(parsed_result)
     
     # 生成唯一的resume_id，用于原始和优化后的简历
     resume_id = uuid.uuid4().hex[:8]
