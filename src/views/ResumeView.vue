@@ -269,17 +269,6 @@ const formattedResume = computed(() => {
   try {
     let resume = resumeData.value.optimizedResume
     
-    // 处理个人信息部分，将|分隔符替换为换行符
-    // 匹配前几行的个人信息（通常前3-4行）
-    // resume = resume.replace(/^(.*?)$/gm, (match, line) => {
-      // 如果行中包含|分隔符且不是标题行，替换为换行
-    //   if (line.includes('|') && !line.startsWith('#') && !line.startsWith('##') && !line.startsWith('###')) {
-    //     // 保留每行的第一个分隔符，其余替换为换行
-    //     return line.replace(/\|/g, '\n')
-    //   }
-    //   return line
-    // })
-    
     // 使用marked库解析Markdown为HTML
     return marked(resume)
   } catch (error) {
