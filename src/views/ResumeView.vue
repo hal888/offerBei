@@ -812,15 +812,15 @@ const downloadResume = async () => {
 /* 格式化简历样式 */
 .resume-preview {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  font-size: 15px !important; /* 增大字体，提升可读性 */
-  line-height: 2.0 !important; /* 增加行高，让文字更舒展 */
-  color: #2c3e50 !important; /* 调整文字颜色，更专业 */
+  font-size: 1rem !important;
+  line-height: 1.6 !important;
+  color: #2c3e50 !important;
   background-color: #ffffff !important;
-  padding: 40px !important; /* 增加内边距，提升整体留白 */
+  padding: 40px !important;
   border-radius: 8px !important;
-  min-height: 500px !important; /* 增加最小高度 */
-  text-align: left !important; /* 确保所有内容左对齐 */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important; /* 增加轻微阴影，提升层次感 */
+  min-height: 500px !important;
+  text-align: left !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
   display: block !important;
   width: 100% !important;
   box-sizing: border-box !important;

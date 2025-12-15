@@ -938,7 +938,7 @@ onUnmounted(() => {
   text-align: center;
 }
 
-.setup-card, .report-card {
+.setup-card, .interview-main-section, .report-card {
   background-color: white;
   padding: 40px;
   border-radius: 10px;
@@ -1080,11 +1080,9 @@ onUnmounted(() => {
   font-size: 1.3rem;
 }
 
-.interview-main-section {
-  background-color: white;
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.report-section {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .interview-header {
@@ -1661,6 +1659,19 @@ onUnmounted(() => {
   justify-content: center;
 }
 
+/* 平板设备优化 */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .interview-content {
+    grid-template-columns: 1.5fr 1fr;
+    gap: 20px;
+  }
+  
+  .setup-card, .interview-main-section, .report-card {
+    padding: 25px;
+  }
+}
+
+/* 移动设备优化 */
 @media (max-width: 768px) {
   .mock-interview-container {
     padding: 10px;
@@ -1670,7 +1681,7 @@ onUnmounted(() => {
     font-size: 2rem;
   }
   
-  .setup-card, .report-card {
+  .setup-card, .interview-main-section, .report-card {
     padding: 20px;
   }
   
@@ -1697,6 +1708,12 @@ onUnmounted(() => {
   
   .radar-chart {
     flex-direction: column;
+  }
+  
+  .interview-header, .interview-info, .interview-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
   }
 }
 
