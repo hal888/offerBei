@@ -46,14 +46,14 @@ def analyze():
     content_length = len(file_content)
     
     # 文件内容写入文件
-    with open('resume.txt', 'w', encoding='utf-8') as f:
-        f.write(file_content)
+    # with open('resume.txt', 'w', encoding='utf-8') as f:
+    #     f.write(file_content)
     
-    if not file_content:
-        # 清理临时文件
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        return jsonify({"error": "无法读取文件内容"}), 400
+    # if not file_content:
+    #     # 清理临时文件
+    #     if os.path.exists(file_path):
+    #         os.remove(file_path)
+    #     return jsonify({"error": "无法读取文件内容"}), 400
     
     # 调用DeepSeek API进行简历分析
     api_result = analyze_resume(file_content)
@@ -74,13 +74,7 @@ def analyze():
     
     # 保存到数据库，resume_id为统一生成的id（即优化后的简历id）
     try:
-        # 查询或创建用户
-        # user = User.query.filter_by(user_id=user_id).first()
-        # if not user:
-        #     user = User(user_id=user_id)
-        #     db.session.add(user)
-        #     db.session.commit()  # 立即提交，获取user_id
-        
+       
         # 创建简历记录，resume_id为统一生成的id
         resume = Resume(
             resume_id=resume_id,

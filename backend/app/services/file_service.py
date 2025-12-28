@@ -1,6 +1,7 @@
 import os
 import uuid
 from config import RESUME_CONFIG
+import pdfplumber
 
 def read_file_content(file_path, file_ext):
     """
@@ -13,33 +14,41 @@ def read_file_content(file_path, file_ext):
     Returns:
         str: 文件内容
     """
+
+    """解析带复杂表格的PDF，保留表格行列结构"""
     content = ""
+    with pdfplumber.open(file_path) as pdf:
+        for page_num, page in enumerate(pdf.pages):
+            
+            # 提取普通文本（保留段落格式）
+            text = page.extract_text()
+            content += text + "\n\n"
     
-    try:
-        if file_ext == 'pdf':
-            # 使用PyMuPDF替代PyPDF2，优化PDF文本提取
-            import fitz  # PyMuPDF的导入名是fitz
-            doc = fitz.open(file_path)
-            for page_num in range(doc.page_count):
-                page = doc.load_page(page_num)
-                # 提取文本，使用空格分隔避免格式错乱
-                page_text = page.get_text("text") or ""
-                # 清理文本，移除多余的空行和空格
-                page_text = '\n'.join([line.strip() for line in page_text.split('\n') if line.strip()])
-                content += page_text + "\n\n"
-            doc.close()
-        elif file_ext == 'docx':
-            from docx import Document
-            doc = Document(file_path)
-            for paragraph in doc.paragraphs:
-                content += paragraph.text + "\n"
-        else:
-            # 处理纯文本文件
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-    except Exception as e:
-        print(f"Error reading file: {e}")
-        content = ""
+    # try:
+    #     if file_ext == 'pdf':
+    #         # 使用PyMuPDF替代PyPDF2，优化PDF文本提取
+    #         import fitz  # PyMuPDF的导入名是fitz
+    #         doc = fitz.open(file_path)
+    #         for page_num in range(doc.page_count):
+    #             page = doc.load_page(page_num)
+    #             # 提取文本，使用空格分隔避免格式错乱
+    #             page_text = page.get_text("text") or ""
+    #             # 清理文本，移除多余的空行和空格
+    #             page_text = '\n'.join([line.strip() for line in page_text.split('\n') if line.strip()])
+    #             content += page_text + "\n\n"
+    #         doc.close()
+    #     elif file_ext == 'docx':
+    #         from docx import Document
+    #         doc = Document(file_path)
+    #         for paragraph in doc.paragraphs:
+    #             content += paragraph.text + "\n"
+    #     else:
+    #         # 处理纯文本文件
+    #         with open(file_path, 'r', encoding='utf-8') as f:
+    # #             content = f.read()
+    # except Exception as e:
+    #     print(f"Error reading file: {e}")
+    #     content = ""
     
     return content
 

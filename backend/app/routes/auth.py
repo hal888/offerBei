@@ -215,8 +215,8 @@ def request_reset_password():
     user.reset_password_expiry = expiry
     db.session.commit()
     
-    # 构建重置链接
-    reset_link = f"http://localhost:5173/reset-password?token={reset_token}&email={email}"
+    # 构建重置链接，域名根据请求头中的Host动态生成
+    reset_link = f"{request.url_root.rstrip('/')}/reset-password?token={reset_token}&email={email}"
     
     # 发送重置密码邮件
     success = send_reset_password_email(email, reset_link)

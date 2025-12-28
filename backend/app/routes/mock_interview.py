@@ -416,7 +416,7 @@ def get_history():
                 "reportData": json.loads(mock_interview.report) if mock_interview.report else {}
             })
         
-        print(f"[API LOG] /api/mock-interview/history - Response: {history}")
+        # print(f"[API LOG] /api/mock-interview/history - Response: {history}")
         return jsonify(history), 200
     except Exception as e:
         print(f"获取模拟面试历史失败: {e}")

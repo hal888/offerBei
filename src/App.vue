@@ -1,6 +1,7 @@
 <script setup>
 // App.vue - Main application component with navigation
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 // 导航栏显示状态
 const navbarVisible = ref(true)
@@ -16,11 +17,27 @@ let debounceTimer = null
 const mobileThreshold = 768
 // 窗口宽度
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
+// 移动端菜单展开状态
+const isMenuExpanded = ref(false)
+// 获取当前路由
+const route = useRoute()
+// 用于触发重新计算登录状态的触发器
+const loginStatusTrigger = ref(0)
 
 // 计算是否为移动设备视图
 const isMobileView = computed(() => {
   return windowWidth.value < mobileThreshold
 })
+
+// 切换移动端菜单展开/折叠状态
+const toggleMenu = () => {
+  isMenuExpanded.value = !isMenuExpanded.value
+}
+
+// 关闭移动端菜单
+const closeMenu = () => {
+  isMenuExpanded.value = false
+}
 
 // 滚动事件处理函数
 const handleScroll = () => {
@@ -59,8 +76,26 @@ const handleResize = () => {
 
 // 计算用户是否已登录
 const isUserLoggedIn = computed(() => {
+  // 使用loginStatusTrigger作为依赖，强制重新计算
+  loginStatusTrigger.value // 触发依赖更新
   return !!localStorage.getItem('token') || !!sessionStorage.getItem('token')
 })
+
+// 监听路由变化，当从登录页跳转时，强制刷新登录状态
+watch(
+  () => route.path,
+  (newPath, oldPath) => {
+    // 当从登录页或注册页跳转到其他页面时，触发登录状态刷新
+    if (oldPath === '/login' || oldPath === '/register') {
+      loginStatusTrigger.value++
+    }
+  }
+)
+
+// 监听storage事件，当localStorage或sessionStorage发生变化时，更新登录状态
+const handleStorageChange = () => {
+  loginStatusTrigger.value++
+}
 
 // 组件挂载时添加事件监听
 onMounted(() => {
@@ -69,6 +104,10 @@ onMounted(() => {
   lastScrollY.value = typeof window !== 'undefined' ? window.scrollY || 0 : 0
   window.addEventListener('scroll', handleScroll, { passive: true })
   window.addEventListener('resize', handleResize)
+  // 添加storage事件监听
+  if (typeof window !== 'undefined') {
+    window.addEventListener('storage', handleStorageChange)
+  }
 })
 
 // 退出登录处理
@@ -84,6 +123,9 @@ const handleLogout = () => {
   sessionStorage.removeItem('userId')
   sessionStorage.removeItem('email')
   
+  // 触发登录状态刷新
+  loginStatusTrigger.value++
+  
   // 跳转到登录页
   window.location.href = '/login'
 }
@@ -92,6 +134,10 @@ const handleLogout = () => {
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
   window.removeEventListener('resize', handleResize)
+  // 移除storage事件监听
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('storage', handleStorageChange)
+  }
   if (debounceTimer) {
     clearTimeout(debounceTimer)
   }
@@ -107,40 +153,30 @@ onUnmounted(() => {
       <div class="navbar-container">
         <div class="navbar-header">
           <div class="navbar-brand">
-            <router-link to="/" class="brand-link">
+            <router-link to="/" class="brand-link" @click="closeMenu">
               <img src="/logo.svg" alt="AI智能面试宝典" class="brand-icon" />
               <span class="brand-name">AI智能面试宝典</span>
             </router-link>
           </div>
+          <!-- 移动端折叠按钮 -->
+          <!-- <button class="navbar-toggle" @click="toggleMenu" aria-label="Toggle navigation">
+            <span class="navbar-toggle-icon">{{ isMenuExpanded ? '✕' : '☰' }}</span>
+          </button> -->
         </div>
         
-        <div class="navbar-menu">
-          <router-link to="/" class="nav-link" exact-active-class="active">首页</router-link>
-          <router-link to="/resume" class="nav-link" exact-active-class="active">简历优化</router-link>
-          <router-link to="/self-intro" class="nav-link" exact-active-class="active">自我介绍</router-link>
-          <router-link to="/question-bank" class="nav-link" exact-active-class="active">智能题库</router-link>
-          <router-link to="/mock-interview" class="nav-link" exact-active-class="active">模拟面试</router-link>
-          <router-link to="/strategy" class="nav-link" exact-active-class="active">面试策略</router-link>
+        <div class="navbar-menu" :class="{ 'menu-expanded': isMenuExpanded && isMobileView }">
+          <router-link to="/" class="nav-link" exact-active-class="active" @click="closeMenu">首页</router-link>
+          <router-link to="/resume" class="nav-link" exact-active-class="active" @click="closeMenu">简历优化</router-link>
+          <router-link to="/self-intro" class="nav-link" exact-active-class="active" @click="closeMenu">自我介绍</router-link>
+          <router-link to="/question-bank" class="nav-link" exact-active-class="active" @click="closeMenu">智能题库</router-link>
+          <router-link to="/mock-interview" class="nav-link" exact-active-class="active" @click="closeMenu">模拟面试</router-link>
+          <router-link to="/strategy" class="nav-link" exact-active-class="active" @click="closeMenu">面试策略</router-link>
           <template v-if="isUserLoggedIn">
             <button class="nav-link logout-btn" @click="handleLogout">退出登录</button>
           </template>
-          <!-- <template v-else>
-            <router-link to="/login" class="nav-link login-btn" exact-active-class="active">登录</router-link>
-            <router-link to="/register" class="nav-link register-btn" exact-active-class="active">注册</router-link>
-          </template> -->
         </div>
       </div>
     </nav>
-
-    <!-- Mobile Top Brand -->
-    <div class="mobile-top-brand">
-      <div class="brand-content">
-        <router-link to="/" class="brand-link">
-          <img src="/logo.svg" alt="AI智能面试宝典" class="brand-icon" />
-          <span class="brand-name">AI智能面试宝典</span>
-        </router-link>
-      </div>
-    </div>
 
     <!-- Main Content -->
     <main class="main-content">
@@ -164,6 +200,7 @@ onUnmounted(() => {
         </template> -->
       </div>
     </nav>
+
   </div>
 </template>
 
@@ -204,13 +241,16 @@ onUnmounted(() => {
 .navbar-container {
   max-width: var(--content-max) !important;
   margin: 0 auto !important;
-  padding: 0 25px !important;
+  padding: 0 20px !important;
   display: flex !important;
-  flex-direction: column !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
   background-color: transparent !important;
   box-sizing: border-box !important;
   transition: all 0.3s ease !important;
   width: 100% !important;
+  gap: 20px !important;
 }
 
 /* 导航栏头部 - 包含品牌和切换按钮 */
@@ -220,6 +260,7 @@ onUnmounted(() => {
   align-items: center !important;
   padding: 15px 0 !important;
   background-color: transparent !important;
+  flex-shrink: 0 !important;
 }
 
 /* 移动端折叠按钮 */
@@ -235,9 +276,9 @@ onUnmounted(() => {
   border-radius: 50%;
   width: 40px;
   height: 40px;
-  display: flex !important;
   align-items: center;
   justify-content: center;
+  margin-left: auto !important;
 }
 
 /* 折叠按钮图标 */
@@ -255,32 +296,78 @@ onUnmounted(() => {
 /* 导航菜单 */
 .navbar-menu {
   display: flex !important;
-  gap: 30px !important;
+  gap: 25px !important;
   align-items: center !important;
   background-color: transparent !important;
   transition: all 0.3s ease !important;
   flex: 1 !important;
-  justify-content: center !important;
+  justify-content: flex-end !important;
   max-height: 500px !important;
   flex-wrap: nowrap !important;
   overflow: visible !important;
 }
 
 /* 折叠状态下的菜单 */
-.navbar-collapsed .navbar-menu {
-  max-height: 0 !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
+.navbar-menu {
+  max-height: 500px !important;
+  opacity: 1 !important;
+  visibility: visible !important;
   padding: 0 !important;
   margin: 0 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* 移动端菜单默认状态 */
+@media (max-width: 1024px) {
+  .navbar-menu {
+    flex-wrap: wrap !important;
+    gap: 15px !important;
+  }
+}
+
+/* 移动端菜单折叠状态 */
+@media (max-width: 768px) {
+  .navbar-menu {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
 }
 
 /* 展开状态下的菜单 */
 .menu-expanded {
-  max-height: 500px !important;
+  max-height: 800px !important;
   opacity: 1 !important;
   visibility: visible !important;
-  padding: 10px 0 !important;
+  padding: 25px 0 !important;
+  margin: 0 !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 15px !important;
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  border-radius: 0 0 16px 16px !important;
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15) !important;
+  backdrop-filter: blur(15px) saturate(110%) !important;
+  overflow: visible !important;
+}
+
+/* 确保菜单展开状态在移动端正确应用 */
+@media (max-width: 768px) {
+  .menu-expanded {
+    max-height: 800px !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    padding: 25px 0 !important;
+    margin: 0 !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 15px !important;
+  }
 }
 
 /* 桌面端导航样式 */
@@ -319,8 +406,25 @@ onUnmounted(() => {
   display: none;
 }
 
-/* 确保在桌面端不应用隐藏效果 */
-@media (min-width: 769px) {
+/* 超宽屏幕样式 */
+@media (min-width: 1440px) {
+  .navbar-container {
+    max-width: 1350px !important;
+    padding: 0 30px !important;
+  }
+  
+  .navbar-menu {
+    gap: 30px !important;
+  }
+  
+  .nav-link {
+    font-size: 1.05rem !important;
+    padding: 12px 20px !important;
+  }
+}
+
+/* 桌面端样式 */
+@media (min-width: 1025px) {
   .navbar.navbar-hidden {
     transform: translateY(0);
   }
@@ -340,7 +444,7 @@ onUnmounted(() => {
     flex: 1 !important;
     flex-wrap: nowrap !important;
     justify-content: flex-end !important;
-    gap: 20px !important;
+    gap: 25px !important;
     overflow: visible !important;
   }
   
@@ -353,16 +457,92 @@ onUnmounted(() => {
   }
 }
 
+/* 平板设备样式 */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .navbar-container {
+    padding: 0 15px !important;
+    flex-wrap: nowrap !important;
+  }
+  
+  .navbar-menu {
+    gap: 18px !important;
+    flex-wrap: nowrap !important;
+    overflow: visible !important;
+  }
+  
+  .nav-link {
+    padding: 10px 15px !important;
+    font-size: 0.95rem !important;
+    min-width: 80px !important;
+  }
+  
+  .navbar-toggle {
+    display: none !important;
+  }
+  
+  .mobile-navbar {
+    display: none !important;
+  }
+}
+
 /* 移动端样式 */
 @media (max-width: 768px) {
-  /* 隐藏桌面端导航 */
+  /* 调整桌面端导航显示方式 */
   .desktop-navbar {
-    display: none;
+    display: block !important;
+  }
+  
+  /* 显示移动端折叠按钮 */
+  .navbar-toggle {
+    display: flex !important;
+    font-size: 2rem !important;
+    width: 50px !important;
+    height: 50px !important;
+  }
+  
+  /* 调整导航栏容器 */
+  .navbar-container {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 15px !important;
+    padding: 15px 20px !important;
+  }
+  
+  /* 调整导航菜单 */
+  .navbar-menu {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 15px !important;
+    padding: 0 !important;
+  }
+  
+  /* 调整导航链接 */
+  .nav-link {
+    font-size: 1.5rem !important;
+    padding: 25px 30px !important;
+    text-align: center !important;
+    min-width: auto !important;
+    border-radius: 16px !important;
+    font-weight: 600 !important;
+    line-height: 1.6 !important;
+    color: var(--color-text) !important;
+    font-family: var(--font-sans) !important;
+  }
+  
+  /* 优化退出登录按钮样式 */
+  .nav-link.logout-btn {
+    font-size: 1.5rem !important;
+    padding: 25px 30px !important;
+    font-weight: 600 !important;
+    background-color: rgba(231, 76, 60, 0.15) !important;
+    border-color: #e74c3c !important;
+    color: #e74c3c !important;
+    border-radius: 16px !important;
   }
   
   /* 显示移动端顶部品牌 */
   .mobile-top-brand {
-    display: block;
+    display: none !important;
   }
   
   /* 移除移动端底部导航样式 */
@@ -375,7 +555,7 @@ onUnmounted(() => {
     background-color: var(--color-bg);
     box-shadow: 0 -2px 10px var(--color-shadow);
     z-index: 1000;
-    padding: 10px 0;
+    padding: 15px 0;
     padding-bottom: env(safe-area-inset-bottom);
   }
   
@@ -386,8 +566,8 @@ onUnmounted(() => {
     align-items: center;
     max-width: var(--content-max);
     margin: 0 auto;
-    padding: 0 5px;
-    gap: 5px;
+    padding: 0 10px;
+    gap: 10px;
   }
   
   /* 移动端导航链接 */
@@ -397,16 +577,16 @@ onUnmounted(() => {
     align-items: center;
     justify-content: center;
     flex: 1;
-    padding: 12px 8px;
+    padding: 15px 12px;
     text-align: center;
-    font-size: 0.8rem !important;
+    font-size: 0.9rem !important;
     font-weight: 500 !important;
     min-width: 0;
     border: none !important;
-    gap: 6px;
+    gap: 8px;
     color: var(--color-text-secondary) !important;
     transition: all 0.3s ease !important;
-    border-radius: 12px;
+    border-radius: 16px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -416,19 +596,19 @@ onUnmounted(() => {
   
   /* 移动端导航链接悬停效果 */
   .mobile-navbar .nav-link:hover {
-    background-color: rgba(102, 126, 234, 0.08) !important;
+    background-color: rgba(102, 126, 234, 0.12) !important;
     color: var(--color-primary) !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15) !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.2) !important;
   }
   
   /* 移动端导航链接激活状态 */
   .mobile-navbar .nav-link.active {
     color: var(--color-primary) !important;
     font-weight: 600 !important;
-    background-color: rgba(102, 126, 234, 0.1) !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15) !important;
+    background-color: rgba(102, 126, 234, 0.15) !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.25) !important;
   }
   
   /* 移除旧的下划线样式 */
@@ -444,37 +624,48 @@ onUnmounted(() => {
     left: 50% !important;
     transform: translateX(-50%) !important;
     width: 0 !important;
-    height: 3px !important;
+    height: 4px !important;
     background-color: var(--color-primary) !important;
-    border-radius: 3px !important;
+    border-radius: 4px !important;
     transition: all 0.3s ease !important;
   }
   
   /* 移动端导航链接悬停和激活状态的顶部装饰条 */
   .mobile-navbar .nav-link:hover::before,
   .mobile-navbar .nav-link.active::before {
-    width: 60% !important;
+    width: 70% !important;
   }
   
   /* 调整主内容区，避免被底部导航遮挡 */
   .main-content {
-    padding-bottom: 85px;
+    padding-bottom: 100px;
   }
   
   /* 调整移动端footer */
   .footer {
-    margin-bottom: 65px;
+    margin-bottom: 80px;
   }
   
   /* 小屏幕手机优化 */
   @media (max-width: 375px) {
     .mobile-navbar .nav-link {
-      font-size: 0.75rem !important;
-      padding: 8px 2px;
+      font-size: 0.85rem !important;
+      padding: 12px 6px;
     }
     
     .mobile-navbar {
-      padding: 8px 0;
+      padding: 12px 0;
+    }
+    
+    .navbar-toggle {
+      font-size: 1.8rem !important;
+      width: 45px !important;
+      height: 45px !important;
+    }
+    
+    .nav-link {
+      font-size: 1.1rem !important;
+      padding: 18px 18px !important;
     }
   }
 }
@@ -581,35 +772,49 @@ onUnmounted(() => {
   transition: all 0.3s ease !important;
   position: relative !important;
   background-color: transparent !important;
-  display: inline-block;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   padding: 12px 16px !important;
-  min-width: 90px;
-  text-align: center;
-  border-radius: 8px;
-  border: 2px solid transparent;
+  min-width: 90px !important;
+  text-align: center !important;
+  border-radius: 8px !important;
+  border: 2px solid transparent !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
 }
 
 .nav-link:hover {
   color: var(--color-primary) !important;
   text-decoration: none !important;
   background-color: rgba(102, 126, 234, 0.08) !important;
-  border-color: rgba(102, 126, 234, 0.2);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  border-color: rgba(102, 126, 234, 0.2) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15) !important;
 }
 
 .nav-link.active {
   color: var(--color-primary) !important;
   background-color: rgba(102, 126, 234, 0.1) !important;
-  border-color: var(--color-primary);
+  border-color: var(--color-primary) !important;
   font-weight: 600 !important;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
-  transform: translateY(-2px);
+  box-shadow: 0 2px 12px rgba(102, 126, 234, 0.25) !important;
+  transform: translateY(-2px) !important;
+  border-bottom: 2px solid var(--color-primary) !important;
+  padding-bottom: 12px !important;
 }
 
 /* 移除旧的下划线样式，使用边框和背景色替代 */
 .nav-link.active::after {
-  content: none !important;
+  content: '' !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 2px !important;
+  background-color: var(--color-primary) !important;
+  border-radius: 0 0 4px 4px !important;
+  z-index: 2 !important;
 }
 
 /* 为导航链接添加顶部装饰条作为视觉指示器 */
@@ -622,13 +827,25 @@ onUnmounted(() => {
   width: 0 !important;
   height: 3px !important;
   background-color: var(--color-primary) !important;
-  border-radius: 3px !important;
+  border-radius: 3px 3px 0 0 !important;
   transition: all 0.3s ease !important;
+  z-index: 1 !important;
 }
 
 .nav-link:hover::before,
 .nav-link.active::before {
-  width: 80% !important;
+  width: 100% !important;
+  left: 0 !important;
+  transform: translateX(0) !important;
+  border-radius: 0 !important;
+}
+
+/* 确保底部边框完全覆盖 */
+.nav-link.active {
+  position: relative !important;
+  z-index: 1 !important;
+  /* 移除重复的border-bottom，只使用::after伪元素 */
+  border-bottom: none !important;
 }
 
 /* 登录、注册、退出按钮样式 */
@@ -638,6 +855,8 @@ onUnmounted(() => {
   color: var(--color-primary) !important;
   font-weight: 600 !important;
   transition: all 0.3s ease !important;
+  white-space: nowrap !important;
+  min-width: 80px !important;
 }
 
 .nav-link.login-btn:hover {
@@ -652,6 +871,8 @@ onUnmounted(() => {
   color: white !important;
   font-weight: 600 !important;
   transition: all 0.3s ease !important;
+  white-space: nowrap !important;
+  min-width: 80px !important;
 }
 
 .nav-link.register-btn:hover {
@@ -668,6 +889,9 @@ onUnmounted(() => {
   font-weight: 600 !important;
   cursor: pointer !important;
   transition: all 0.3s ease !important;
+  white-space: nowrap !important;
+  min-width: 100px !important;
+  position: relative !important;
 }
 
 .nav-link.logout-btn:hover {
@@ -676,11 +900,114 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px rgba(231, 76, 60, 0.2) !important;
 }
 
+/* 登录、注册、退出按钮激活状态样式 */
+.nav-link.login-btn.active,
+.nav-link.register-btn.active,
+.nav-link.logout-btn.active {
+  /* 移除重复的border-bottom，只使用::after伪元素 */
+  border-bottom: none !important;
+  background-color: rgba(102, 126, 234, 0.1) !important;
+  border-color: var(--color-primary) !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 12px rgba(102, 126, 234, 0.25) !important;
+  transform: translateY(-2px) !important;
+  padding-bottom: 12px !important;
+}
+
+/* 登录、注册、退出按钮的底部遮盖层 - 确保完全覆盖 */
+.nav-link.login-btn.active::after,
+.nav-link.register-btn.active::after,
+.nav-link.logout-btn.active::after {
+  content: '' !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 2px !important;
+  background-color: var(--color-primary) !important;
+  border-radius: 0 0 4px 4px !important;
+  z-index: 2 !important;
+  /* 确保完全覆盖整个按钮宽度 */
+  width: 100% !important;
+}
+
 /* 移除登录、注册、退出按钮的顶部装饰条 */
 .nav-link.login-btn::before,
 .nav-link.register-btn::before,
 .nav-link.logout-btn::before {
   content: none !important;
+}
+
+/* 确保所有导航链接文字不换行 */
+.nav-link {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  min-width: 85px !important;
+  /* 确保文字始终在一行显示 */
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* 屏幕较小时优化字体大小和间距 */
+@media (max-width: 1200px) {
+  .navbar-menu {
+    gap: 20px !important;
+  }
+  
+  .nav-link {
+    font-size: 0.95rem !important;
+    padding: 10px 14px !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .navbar-menu {
+    gap: 15px !important;
+  }
+  
+  .nav-link {
+    font-size: 0.9rem !important;
+    padding: 10px 12px !important;
+    min-width: 80px !important;
+  }
+  
+  .nav-link.logout-btn {
+    min-width: 90px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .navbar-menu {
+    gap: 12px !important;
+  }
+  
+  .nav-link {
+    font-size: 0.85rem !important;
+    padding: 8px 10px !important;
+    min-width: 75px !important;
+  }
+  
+  .nav-link.logout-btn {
+    min-width: 85px !important;
+  }
+}
+
+@media (max-width: 800px) {
+  .navbar-menu {
+    gap: 10px !important;
+  }
+  
+  .nav-link {
+    font-size: 0.8rem !important;
+    padding: 8px 8px !important;
+    min-width: 70px !important;
+  }
+  
+  .nav-link.logout-btn {
+    min-width: 80px !important;
+  }
 }
 
 /* Main Content */
