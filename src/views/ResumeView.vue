@@ -199,7 +199,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onActivated } from 'vue'
 import apiClient from '@/utils/api.js'
 import { useRouter } from 'vue-router'
 import ErrorMessage from '@/components/ErrorMessage.vue'
@@ -289,36 +289,51 @@ const closeError = () => {
   }
 }
 
+// 检查登录状态的函数
+const checkLoginStatus = () => {
+  // 检查登录状态
+  const userId = localStorage.getItem('userId')
+  
+  // 如果没有userId，直接显示登录提示
+  if (!userId) {
+    // 显示请先登录提示，点击确定后跳转到登录页
+    showErrorMessage('请先登录', '提示', () => {
+      router.push('/login')
+    })
+  }
+}
+
 // 页面加载时自动获取最新的简历优化内容
 onMounted(async () => {
-  try {
-        let userId = localStorage.getItem('userId')
-        if (!userId) return
-        // 从localStorage获取resumeId
-        const resumeId = localStorage.getItem('resumeId')
-        
-        // 只有在用户有resumeId的情况下才调用API获取简历数据
-        // if (resumeId) {
-            // 调用后端API获取最新的简历数据，使用相对路径，自动适配不同环境
-            const response = await apiClient.post('/resume/get', {
-                resumeId: resumeId
-            })
+  checkLoginStatus()
+  
+  const userId = localStorage.getItem('userId')
+  
+  if (userId) {
+    try {
+      // 从localStorage获取resumeId
+      const resumeId = localStorage.getItem('resumeId')
       
-            // 如果返回了简历数据，填充到页面上
-            if (response.data && response.data.optimizedResume) {
-              resumeData.value = response.data
-              // 更新formattedResume
-              await updateFormattedResume()
-            }
-    // }
-  } catch (error) {
-    // 如果没有找到数据或其他错误，忽略，等待用户上传新简历
-    console.log('获取最新简历失败:', error)
-    if (error.isUnauthorized) {
-      // 401错误，显示请先登录提示，点击确定后跳转到登录页
-      showErrorMessage('请先登录', '提示', () => {
-        router.push('/login')
+      // 调用后端API获取最新的简历数据，使用相对路径，自动适配不同环境
+      const response = await apiClient.post('/resume/get', {
+          resumeId: resumeId
       })
+    
+      // 如果返回了简历数据，填充到页面上
+      if (response.data && response.data.optimizedResume) {
+        resumeData.value = response.data
+        // 更新formattedResume
+        await updateFormattedResume()
+      }
+    } catch (error) {
+      // 如果没有找到数据或其他错误，忽略，等待用户上传新简历
+      console.log('获取最新简历失败:', error)
+      if (error.isUnauthorized) {
+        // 401错误，显示请先登录提示，点击确定后跳转到登录页
+        showErrorMessage('请先登录', '提示', () => {
+          router.push('/login')
+        })
+      }
     }
   }
   
@@ -326,6 +341,11 @@ onMounted(async () => {
   setTimeout(() => {
     loadRecentFiles()
   }, 100)
+})
+
+// 每次组件激活时（包括首次挂载和从其他路由返回时）都检查登录状态
+onActivated(() => {
+  checkLoginStatus()
 })
 
 const handleFileUpload = (event) => {

@@ -304,8 +304,11 @@ def voice_answer():
         audio_path = os.path.join(temp_dir, f'{interview_id}_{timestamp}.webm')
         audio_file.save(audio_path)
         
+        # 获取语音识别引擎参数，默认使用whisper
+        engine = request.form.get('engine', 'whisper')
+        
         # 语音识别处理
-        transcribed_text = transcribe_audio(audio_path)
+        transcribed_text = transcribe_audio(audio_path, engine=engine)
         
         # 删除临时文件
         if os.path.exists(audio_path):
@@ -462,27 +465,123 @@ def save_report():
         print(f"保存模拟面试报告失败: {e}")
         return jsonify({"error": "Failed to save mock interview report"}), 500
 
-# 语音识别函数
-def transcribe_audio(audio_path):
-    """将音频文件转换为文本"""
+@bp.route('/realtime-voice', methods=['POST'])
+@auth_required
+def realtime_voice():
+    """实时语音识别API，处理1秒音频分片"""
     try:
-        # 这里使用OpenAI Whisper API进行语音识别
-        # 实际部署时需要替换为真实的API调用或本地模型
-        import openai
+        interview_id = request.form.get('interviewId')
+        question_id = request.form.get('questionId')
+        audio_file = request.files.get('audio')
+        chunk_index = request.form.get('chunkIndex', 0)
+        # 打印调试信息
+        print(f"[API LOG] /api/mock-interview/realtime-voice - Received chunk {chunk_index} for interview {interview_id}, question {question_id}")
+        
+        if not interview_id or not audio_file:
+            return jsonify({"error": "缺少必要参数"}), 400
+        
+        # 保存音频文件到临时目录
         import os
+        from datetime import datetime
+        import tempfile
         
-        # 检查是否设置了API密钥
-        if not os.environ.get('OPENAI_API_KEY'):
-            # 如果没有API密钥，返回模拟结果
-            print("未设置OPENAI_API_KEY，使用模拟语音识别结果")
-            return "这是一个模拟的语音识别结果。在实际环境中，这里会调用真实的语音识别API，如OpenAI Whisper，将音频文件转换为准确的文本内容。"
+        temp_dir = os.path.join(os.getcwd(), 'temp_audio')
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir)
         
-        # 使用OpenAI Whisper API
-        with open(audio_path, "rb") as audio_file:
-            transcript = openai.Audio.transcribe("whisper-1", audio_file, language="zh")
+        # 获取原始文件名和扩展名
+        original_filename = audio_file.filename
+        file_extension = original_filename.split('.')[-1] if original_filename else 'webm'
         
-        return transcript["text"]
+        # 根据实际文件类型保存，不强制使用wav扩展名
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+        audio_path = os.path.join(temp_dir, f'realtime_{interview_id}_{timestamp}_{chunk_index}.{file_extension}')
+        audio_file.save(audio_path)
+        
+        # 打印保存路径和文件信息
+        print(f"[API LOG] /api/mock-interview/realtime-voice - Audio saved to {audio_path}")
+        print(f"[API LOG] /api/mock-interview/realtime-voice - File size: {os.path.getsize(audio_path)} bytes")
+        print(f"[API LOG] /api/mock-interview/realtime-voice - Original filename: {original_filename}")
+        
+        # 获取语音识别引擎参数，默认使用whisper
+        engine = request.form.get('engine', 'whisper')
+        transcribed_text = ""
+        
+        try:
+
+            # 使用阿里云ASR
+            asr_service = get_aliyun_asr_service()
+            transcribed_text = asr_service.transcribe_audio(audio_path)
+            print(f"[API LOG] /api/mock-interview/realtime-voice - 阿里云ASR识别结果: {transcribed_text}")
+                
+        except Exception as transcribe_error:
+            print(f"[ERROR] 音频转录失败: {transcribe_error}")
+            # 返回错误信息
+            return jsonify({
+                'chunkIndex': chunk_index,
+                'error': f'音频转录失败: {str(transcribe_error)}',
+                'status': 'error'
+            }), 500
+        
+        # 删除临时文件
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+        
+        return jsonify({
+            'chunkIndex': chunk_index,
+            'transcribedText': transcribed_text,
+            'status': 'success'
+        }), 200
+        
+    except Exception as e:
+        print(f"实时语音识别失败: {e}")
+        return jsonify({
+            'chunkIndex': chunk_index if 'chunk_index' in locals() else 0,
+            'error': f'处理音频数据失败: {str(e)}',
+            'status': 'error'
+        }), 500
+
+# 导入阿里云ASR服务
+from ..services.aliyun_asr_service import AliyunASRService
+
+# 初始化阿里云ASR服务实例
+# 注意：这里使用了懒加载模式，只有在需要时才初始化，避免配置缺失时影响其他功能
+_aliyun_asr_service = None
+
+def get_aliyun_asr_service():
+    """获取阿里云ASR服务实例（单例模式）"""
+    global _aliyun_asr_service
+    if _aliyun_asr_service is None:
+        try:
+            _aliyun_asr_service = AliyunASRService()
+        except Exception as e:
+            print(f"初始化阿里云ASR服务失败: {e}")
+            _aliyun_asr_service = None
+    return _aliyun_asr_service
+
+# 语音识别函数
+def transcribe_audio(audio_path, engine="whisper"):
+    """语音识别函数，支持多种引擎
+    
+    Args:
+        audio_path: 音频文件路径
+        engine: 识别引擎，可选值: whisper, aliyun
+        
+    Returns:
+        str: 转录后的文本
+    """
+    try:
+        if engine == "aliyun":
+            # 使用阿里云ASR
+            asr_service = get_aliyun_asr_service()
+            try:
+                result = asr_service.transcribe_audio(audio_path)
+                print(f"阿里云ASR语音识别结果: {result}")
+                return result
+            except Exception as aliyun_error:
+                print(f"阿里云ASR语音识别失败: {aliyun_error}")
+                print("降级使用Faster Whisper")
+                # 降级使用Faster Whisper
+                engine = "whisper"       
     except Exception as e:
         print(f"语音识别失败: {e}")
-        # 返回模拟结果
-        return "这是一个模拟的语音识别结果。在实际环境中，这里会调用真实的语音识别API，如OpenAI Whisper，将音频文件转换为准确的文本内容。"

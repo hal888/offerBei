@@ -2,7 +2,7 @@
   <div class="home-container">
     <header class="hero-section">
       <div class="hero-content">
-        <h1>AI智能面试宝典</h1>
+        <h1>Offer贝，面试必备</h1>
         <p>一站式解决求职者"简历差、不会说、没题练、怕面试"的四大痛点</p>
         <div class="cta-buttons">
           <router-link to="/resume" class="btn primary-btn">开始使用</router-link>
@@ -57,7 +57,7 @@
         <div class="step">
           <div class="step-number">1</div>
           <h3>上传简历</h3>
-          <p>支持PDF、DOCX、JPG/PNG格式</p>
+          <p>支持PDF格式</p>
         </div>
         <div class="step-arrow">→</div>
         <div class="step">

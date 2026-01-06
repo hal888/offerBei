@@ -142,8 +142,39 @@ onUnmounted(() => {
     clearTimeout(debounceTimer)
   }
 })
-</script>
 
+// 组件挂载后动态插入JSON-LD Schema标记
+onMounted(() => {
+  // 只在浏览器环境中执行
+  if (typeof window !== 'undefined') {
+    // 创建script标签
+    const script = document.createElement('script')
+    script.type = 'application/ld+json'
+    
+    // 设置JSON-LD内容
+    const jsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      'name': 'Offer贝',
+      'description': 'AI面试辅助工具，提供简历优化、模拟面试、智能题库等功能，助力求职者拿到心仪Offer',
+      'applicationCategory': 'JobSearchingApplication',
+      'operatingSystem': 'Web',
+      'offers': {
+        '@type': 'Offer',
+        'price': '0',
+        'priceCurrency': 'CNY'
+      }
+    }
+    
+    // 将JSON对象转换为字符串
+    script.textContent = JSON.stringify(jsonLd)
+    
+    // 将script标签插入到head标签中
+    document.head.appendChild(script)
+  }
+})
+</script>
+<!-- 首页添加Schema标记 -->
 <template>
   <div class="app-container">
     <!-- Desktop Navigation Bar -->
@@ -154,8 +185,8 @@ onUnmounted(() => {
         <div class="navbar-header">
           <div class="navbar-brand">
             <router-link to="/" class="brand-link" @click="closeMenu">
-              <img src="/logo.svg" alt="AI智能面试宝典" class="brand-icon" />
-              <span class="brand-name">AI智能面试宝典</span>
+              <img src="/logo.webp" alt="Offer贝 - 面试必备" class="brand-icon" />
+              <span class="brand-name">Offer贝</span>
             </router-link>
           </div>
           <!-- 移动端折叠按钮 -->

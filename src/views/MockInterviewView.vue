@@ -378,6 +378,7 @@ const startInterview = async () => {
 const startInterviewProcess = async () => {
   isLoading.value = true
   loadingMessage.value = '正在准备面试...'
+  showReport.value = false // 开始面试时隐藏报告
   
   // 从localStorage获取userId
   const userId = localStorage.getItem('userId') || ''
@@ -541,200 +542,483 @@ const sendMessage = () => {
   })
 }
 
-// 语音识别相关变量
-let recognition = null
+// 语音识别相关变量（使用MediaRecorder API）
+let mediaRecorder = null
+let audioStream = null
+let audioChunks = []
 let isSpeechSupported = ref(true)
-// 添加语音识别状态管理变量（在组件作用域内定义）
-let isRecognitionStarting = false
-let isRecognitionRunning = false
 // 添加录音状态指示
 const recordingStatus = ref('idle') // idle, recording, processing, completed
 // 保存当前录音的临时文本，用于追加功能
 let currentRecordingText = ''
-// 保存上一次最终结果的位置，用于实现追加功能
-let lastFinalIndex = 0
+// 保存当前音频流的时间戳
+let currentChunkIndex = 0
+// 保存MediaRecorder实例和定时器
+let recordTimer = null
 
-// 初始化语音识别
+// 初始化语音识别（使用MediaRecorder API）
 const initSpeechRecognition = () => {
-  // 检查浏览器是否支持语音识别
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-  const SpeechGrammarList = window.SpeechGrammarList || window.webkitSpeechGrammarList
-  const SpeechRecognitionEvent = window.SpeechRecognitionEvent || window.webkitSpeechRecognitionEvent
-  
-  if (!SpeechRecognition) {
+  // 检查浏览器是否支持MediaRecorder
+  if (!navigator.mediaDevices || !window.MediaRecorder) {
     isSpeechSupported.value = false
-    realTimeTips.value.push('您的浏览器不支持语音识别功能，请使用Chrome或Edge等现代浏览器')
+    realTimeTips.value.push('您的浏览器不支持MediaRecorder功能，请使用Chrome或Edge等现代浏览器')
     return
   }
   
-  console.log('创建语音识别实例...')
-  // 创建语音识别实例
-  recognition = new SpeechRecognition()
+  console.log('MediaRecorder API 初始化完成')
+}
+
+// 将AudioBuffer转换为WAV格式
+const audioBufferToWav = (buffer) => {
+  // 确保是单声道
+  const numOfChan = 1
+  const sampleRate = buffer.sampleRate
+  const length = buffer.length * numOfChan * 2
   
-  // 优化语音识别选项，确保实时性
-  recognition.continuous = true // 启用连续识别，确保实时捕获
-  recognition.interimResults = true // 启用中间结果，确保实时转换
-  recognition.lang = 'zh-CN' // 设置为中文
-  recognition.maxAlternatives = 1 // 只返回一个结果
+  // 创建WAV文件头部
+  const bufferArray = new ArrayBuffer(44 + length)
+  const view = new DataView(bufferArray)
   
-  // 设置更短的语音识别结果返回间隔，确保转换延迟<1秒
-  if (typeof recognition.interimResultsDelay !== 'undefined') {
-    recognition.interimResultsDelay = 300 // 设置中间结果延迟为300ms，确保实时性
+  // 写入WAV头信息
+  let pos = 0
+  
+  // RIFF标识符
+  writeString(view, pos, 'RIFF')
+  pos += 4
+  // 文件长度
+  view.setUint32(pos, 36 + length, true)
+  pos += 4
+  // WAVE标识符
+  writeString(view, pos, 'WAVE')
+  pos += 4
+  // fmt子chunk标识符
+  writeString(view, pos, 'fmt ')
+  pos += 4
+  // fmt子chunk长度
+  view.setUint32(pos, 16, true)
+  pos += 4
+  // 音频格式（PCM）
+  view.setUint16(pos, 1, true)
+  pos += 2
+  // 声道数
+  view.setUint16(pos, numOfChan, true)
+  pos += 2
+  // 采样率
+  view.setUint32(pos, sampleRate, true)
+  pos += 4
+  // 字节率 = 采样率 * 声道数 * 采样位深 / 8
+  view.setUint32(pos, sampleRate * numOfChan * 2, true)
+  pos += 4
+  // 块对齐 = 声道数 * 采样位深 / 8
+  view.setUint16(pos, numOfChan * 2, true)
+  pos += 2
+  // 采样位深
+  view.setUint16(pos, 16, true)
+  pos += 2
+  // data子chunk标识符
+  writeString(view, pos, 'data')
+  pos += 4
+  // data子chunk长度
+  view.setUint32(pos, length, true)
+  pos += 4
+  
+  // 准备音频数据，确保是单声道
+  let channelData
+  if (buffer.numberOfChannels > 1) {
+    // 转换为单声道：取左右声道的平均值
+    const leftChannel = buffer.getChannelData(0)
+    const rightChannel = buffer.getChannelData(1)
+    channelData = new Float32Array(leftChannel.length)
+    for (let i = 0; i < leftChannel.length; i++) {
+      channelData[i] = (leftChannel[i] + rightChannel[i]) / 2
+    }
+  } else {
+    // 已经是单声道，直接使用
+    channelData = buffer.getChannelData(0)
   }
   
-  // 监听语音识别开始事件
-  recognition.onstart = () => {
-    console.log('✅ 语音识别已开始')
-    isRecognitionStarting = false
-    isRecognitionRunning = true
-    recordingStatus.value = 'recording'
-    realTimeTips.value.push('🎤 录音中...')
-    // 保存当前输入框内容，用于后续追加
-    currentRecordingText = inputMessage.value
-    // 保存当前录音的起始索引，用于标点符号处理
-    lastFinalIndex = 0
+  // 写入音频数据
+  for (let i = 0; i < channelData.length; i++) {
+    // 将float32转换为int16
+    const sample = Math.max(-1, Math.min(1, channelData[i]))
+    const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF
+    view.setInt16(pos, intSample, true)
+    pos += 2
   }
   
-  // 监听语音识别结果事件
-  recognition.onresult = (event) => {
-    console.log('🔊 收到语音识别结果事件:', event)
+  return new Blob([bufferArray], { type: 'audio/wav' })
+}
+
+// 辅助函数：写入字符串到DataView
+function writeString(view, offset, string) {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i))
+  }
+}
+
+// 将WebM格式转换为WAV格式
+const convertWebMToWav = async (webmBlob) => {
+  return new Promise((resolve, reject) => {
+    // 创建AudioContext，使用默认采样率
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)()
     
-    // 初始化当前录音的转录文本
-    let finalTranscript = ''
-    let interimTranscript = ''
+    // 创建FileReader读取WebM文件
+    const reader = new FileReader()
     
-    // 遍历所有结果（包括中间结果）
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      const result = event.results[i]
-      const item = result[0]
+    reader.onload = async (e) => {
+      try {
+        // 解码WebM音频数据
+        const arrayBuffer = e.target.result
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+        
+        // 如果采样率不是16kHz，进行重采样
+        if (audioBuffer.sampleRate !== 16000) {
+          console.log(`[DEBUG] 重采样: ${audioBuffer.sampleRate} -> 16000`)
+          
+          // 创建OfflineAudioContext进行重采样
+          const offlineContext = new OfflineAudioContext(
+            1, // 单声道
+            Math.ceil(audioBuffer.length * (16000 / audioBuffer.sampleRate)),
+            16000
+          )
+          
+          // 创建源节点并连接到目标
+          const source = offlineContext.createBufferSource()
+          source.buffer = audioBuffer
+          source.connect(offlineContext.destination)
+          
+          // 开始渲染
+          source.start(0)
+          const resampledBuffer = await offlineContext.startRendering()
+          
+          // 转换为WAV格式
+          const wavBlob = audioBufferToWav(resampledBuffer)
+          resolve(wavBlob)
+        } else {
+          // 采样率已经是16kHz，直接转换
+          const wavBlob = audioBufferToWav(audioBuffer)
+          resolve(wavBlob)
+        }
+      } catch (error) {
+        console.error('[ERROR] 音频转换失败:', error)
+        reject(error)
+      }
+    }
+    
+    reader.onerror = (error) => {
+      console.error('[ERROR] 读取音频文件失败:', error)
+      reject(error)
+    }
+    
+    // 开始读取文件
+    reader.readAsArrayBuffer(webmBlob)
+  })
+}
+
+// 发送音频片段到后端
+const sendAudioChunk = async (audioBlob, chunkIndex) => {
+  const maxRetries = 3
+  let retries = 0
+  
+  while (retries < maxRetries) {
+    try {
+      const formData = new FormData()
+      formData.append('interviewId', interviewId.value)
+      formData.append('questionId', currentQuestion.value)
+      formData.append('chunkIndex', chunkIndex)
+      // 设置语音识别引擎为阿里云ASR
+      formData.append('engine', 'aliyun')
+      // 使用正确的wav扩展名，因为我们生成的是WAV格式
+      formData.append('audio', audioBlob, `chunk_${chunkIndex}.wav`)
       
-      console.log(`结果 ${i}:`, {
-        transcript: item.transcript,
-        isFinal: result.isFinal,
-        confidence: item.confidence
+      const response = await apiClient.post('/mock-interview/realtime-voice', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       })
       
-      // 分离最终结果和中间结果
-      if (result.isFinal) {
-        finalTranscript += item.transcript
-        lastFinalIndex = i
-      } else {
-        interimTranscript += item.transcript
-      }
-    }
-    
-    // 处理最终结果：添加标点符号并更新当前录音文本
-    if (finalTranscript) {
-      // 添加标点符号处理：在最终结果末尾添加适当的标点
-      const lastChar = finalTranscript.slice(-1)
-      if (!['。', '，', '！', '？', '；', '.', ',', '!', '?', ';'].includes(lastChar)) {
-        // 如果是较长的文本，添加句号；否则添加逗号
-        finalTranscript += finalTranscript.length > 10 ? '。' : '，'
-      }
-      currentRecordingText += finalTranscript
-    }
-    
-    // 实时更新输入框内容：当前最终文本 + 中间结果
-    const fullText = currentRecordingText + interimTranscript
-    console.log('✅ 更新输入框内容:', fullText)
-    inputMessage.value = fullText
-    
-    // 确保输入框自动滚动到底部，方便用户查看
-    const textarea = document.querySelector('textarea')
-    if (textarea) {
-      textarea.scrollTop = textarea.scrollHeight
-    }
-  }
-  
-  // 监听语音识别错误事件
-  recognition.onerror = (event) => {
-    console.error('❌ 语音识别错误:', event.error)
-    recordingStatus.value = 'recording' // 保持录音状态，继续尝试
-    
-    // 只处理真正的致命错误，忽略网络错误等非致命错误
-    const fatalErrors = ['not-allowed', 'audio-capture']
-    
-    if (fatalErrors.includes(event.error)) {
-      let errorMessage = '语音识别失败，请重试'
-      
-      if (event.error === 'not-allowed') {
-        errorMessage = '麦克风权限被拒绝，请在浏览器设置中允许麦克风访问'
-      } else if (event.error === 'audio-capture') {
-        errorMessage = '未检测到麦克风设备'
-      }
-      
-      realTimeTips.value.push(errorMessage)
-      isRecording.value = false
-      isRecognitionRunning = false
-      recordingStatus.value = 'idle'
-    } 
-    else {
-      console.log(`⚠️  非致命错误: ${event.error}，继续录音...`)
-      
-      // 对于网络错误，优化恢复机制
-      if (event.error === 'network') {
-        realTimeTips.value.push('网络连接暂时不稳定，语音识别正在尝试恢复...')
-        // 网络错误时，立即尝试重新启动识别，确保功能恢复
-        if (isRecording.value && recognition && recognition.state !== 'running') {
-          try {
-            recognition.stop()
-            // 更短的延迟，快速恢复
-            setTimeout(() => {
-              if (isRecording.value) {
-                recognition.start()
-              }
-            }, 300)
-          } catch (error) {
-            console.error('尝试恢复语音识别失败:', error)
-          }
+      const data = response.data
+      if (data.status === 'success' && data.transcribedText) {
+        // 更新当前录音文本
+        currentRecordingText += data.transcribedText
+        inputMessage.value = currentRecordingText
+        
+        // 确保输入框自动滚动到底部
+        const textarea = document.querySelector('textarea')
+        if (textarea) {
+          textarea.scrollTop = textarea.scrollHeight
         }
       }
-      // 对于其他非致命错误，静默处理，继续录音
+      
+      return data
+    } catch (error) {
+      retries++
+      if (retries >= maxRetries) {
+        console.error(`音频片段发送失败，已重试${maxRetries}次:`, error)
+        realTimeTips.value.push('网络连接暂时不稳定，语音识别正在尝试恢复...')
+        throw error
+      }
+      
+      // 指数退避
+      const delay = 1000 * Math.pow(2, retries - 1)
+      console.log(`音频片段发送失败，${delay}ms后重试...`)
+      await new Promise(resolve => setTimeout(resolve, delay))
+    }
+  }
+}
+
+// 使用AudioContext和ScriptProcessorNode录制音频，确保生成完整的WAV格式
+const handleAudioRecording = () => {
+  let audioContext = null
+  let scriptProcessor = null
+  let mediaStreamSource = null
+  let audioBuffer = []
+  let sampleRate = 16000
+  
+  // 初始化AudioContext
+  const initAudioContext = () => {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)({
+      sampleRate: sampleRate
+    })
+    
+    // 创建ScriptProcessorNode，缓冲区大小为4096，1个输入通道，1个输出通道
+    scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1)
+    
+    // 连接麦克风到ScriptProcessorNode
+    mediaStreamSource = audioContext.createMediaStreamSource(audioStream)
+    mediaStreamSource.connect(scriptProcessor)
+    
+    // 连接ScriptProcessorNode到输出（扬声器），否则会出现延迟
+    scriptProcessor.connect(audioContext.destination)
+    
+    // 处理音频数据
+    scriptProcessor.onaudioprocess = (event) => {
+      // 获取输入缓冲区数据
+      const inputData = event.inputBuffer.getChannelData(0)
+      // 将数据复制到音频缓冲区
+      audioBuffer.push(...inputData)
     }
   }
   
-  // 监听语音识别结束事件
-  recognition.onend = () => {
-    console.log('⏹️  语音识别已结束')
-    isRecognitionRunning = false
-    
-    // 如果用户仍在录音状态，立即重新开始识别，确保连续录音
-    if (isRecording.value) {
-      realTimeTips.value.push('📝 录音片段已转换为文字，继续录音中...')
-      // 延迟重新开始识别，避免频繁重启导致的问题
-      try {
-        setTimeout(() => {
-          if (isRecording.value) {
-            // 重新初始化recognition实例，避免状态混乱
-            initSpeechRecognition()
-            isRecognitionStarting = true
-            recognition.start()
-            recordingStatus.value = 'recording'
-            isRecognitionRunning = true
-            isRecognitionStarting = false
-          }
-        }, 500) // 添加500ms延迟，避免频繁重启
-      } catch (error) {
-        console.error('自动重新开始识别失败:', error)
-        recordingStatus.value = 'idle'
-        isRecording.value = false
-        realTimeTips.value.push('❌ 录音已停止，请重试')
-        isRecognitionStarting = false
-        // 重新初始化recognition实例
-        initSpeechRecognition()
-      }
-    } else {
-      // 录音已停止，显示录音完成
-      recordingStatus.value = 'completed'
-      realTimeTips.value.push('✅ 录音已完成')
-      // 重置状态
-      setTimeout(() => {
-        recordingStatus.value = 'idle'
-        // 重新初始化recognition实例
-        initSpeechRecognition()
-      }, 1000)
-    }
+  // 开始录音
+  const start = () => {
+    audioBuffer = []
+    initAudioContext()
   }
+  
+  // 停止录音并获取WAV格式的音频数据
+  const stop = () => {
+    // 停止ScriptProcessorNode
+    scriptProcessor.disconnect()
+    mediaStreamSource.disconnect()
+    audioContext.close()
+    
+    // 转换为WAV格式
+    const wavBlob = bufferToWave(audioBuffer, sampleRate)
+    return wavBlob
+  }
+  
+  // 将音频缓冲区转换为WAV格式
+  const bufferToWave = (buffer, sampleRate) => {
+    const numOfChan = 1
+    const length = buffer.length * numOfChan * 2
+    const bufferArray = new ArrayBuffer(length)
+    const view = new DataView(bufferArray)
+    let offset = 0
+    let pos = 0
+    
+    // 写入WAV头信息
+    const setUint16 = (data) => {
+      view.setUint16(pos, data, true)
+      pos += 2
+    }
+    
+    const setUint32 = (data) => {
+      view.setUint32(pos, data, true)
+      pos += 4
+    }
+    
+    // RIFF identifier
+    setUint32(0x46464952)
+    // file length
+    setUint32(length + 36)
+    // RIFF type
+    setUint32(0x45564157)
+    // format chunk identifier
+    setUint32(0x20746d66)
+    // format chunk length
+    setUint32(16)
+    // sample format (raw)
+    setUint16(1)
+    // channel count
+    setUint16(numOfChan)
+    // sample rate
+    setUint32(sampleRate)
+    // byte rate (sample rate * block align)
+    setUint32(sampleRate * numOfChan * 2)
+    // block align (channel count * bytes per sample)
+    setUint16(numOfChan * 2)
+    // bits per sample
+    setUint16(16)
+    // data chunk identifier
+    setUint32(0x61746164)
+    // data chunk length
+    setUint32(length)
+    
+    // 写入音频数据
+    while (pos < length) {
+      let sample = Math.max(-1, Math.min(1, buffer[offset]))
+      sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF
+      view.setInt16(pos, sample, true)
+      pos += 2
+      offset++
+    }
+    
+    return new Blob([bufferArray], { type: 'audio/wav' })
+  }
+  
+  return { start, stop }
+}
+
+// 开始录音
+const startRecording = async () => {
+  try {
+    // 请求麦克风权限
+    audioStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        sampleRate: 16000,
+        sampleSize: 16,
+        channelCount: 1
+      }
+    })
+    
+    // 保存当前输入框内容，用于后续追加
+    currentRecordingText = inputMessage.value
+    currentChunkIndex = 0
+    
+    // 使用MediaRecorder API进行录音，更可靠且现代
+    const mediaRecorder = new MediaRecorder(audioStream, {
+      mimeType: 'audio/webm;codecs=opus'
+    })
+    
+    // 音频数据数组
+    let chunks = []
+    
+    // 监听数据可用事件
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        chunks.push(event.data)
+      }
+    }
+    
+    // 监听录制结束事件
+    mediaRecorder.onstop = async () => {
+      try {
+        // 检查是否有实际录音内容（如果chunks为空或只有很小的数据块，说明用户没说话）
+        if (chunks.length === 0 || chunks.every(chunk => chunk.size < 100)) {
+          console.log('[DEBUG] 录音内容为空，跳过处理')
+          recordingStatus.value = 'completed'
+          realTimeTips.value.push('✅ 录音已完成（无内容）')
+          return
+        }
+        
+        // 合并音频数据
+        const webmBlob = new Blob(chunks, { type: 'audio/webm' })
+        console.log(`[DEBUG] 生成WebM音频，大小: ${webmBlob.size} bytes，类型: ${webmBlob.type}`)
+        
+        // 如果WebM音频太小，说明用户没说话
+        if (webmBlob.size < 200) {
+          console.log('[DEBUG] WebM音频太小，跳过处理')
+          recordingStatus.value = 'completed'
+          realTimeTips.value.push('✅ 录音已完成（无内容）')
+          return
+        }
+        
+        // 转换为WAV格式
+        const wavBlob = await convertWebMToWav(webmBlob)
+        console.log(`[DEBUG] 转换为WAV音频，大小: ${wavBlob.size} bytes，类型: ${wavBlob.type}`)
+        
+        // 只发送有实际内容的音频块（WAV头大小为44字节，确保有音频数据）
+        if (wavBlob.size > 50) { 
+          // 发送音频块到后端
+          recordingStatus.value = 'processing'
+          await sendAudioChunk(wavBlob, currentChunkIndex)
+          currentChunkIndex++
+        } else {
+          console.log('[DEBUG] WAV音频太小，跳过发送到后端')
+        }
+        // 录音已完成，设置状态为completed
+        recordingStatus.value = 'completed'
+      } catch (error) {
+        console.error('处理音频数据失败:', error)
+        realTimeTips.value.push('音频处理失败: ' + error.message)
+        // 出错时也设置为completed状态
+        recordingStatus.value = 'completed'
+      }
+    }
+    
+    // 开始录音，每1秒触发一次数据可用事件
+    mediaRecorder.start(1000)
+    
+    console.log('录音已开始')
+    recordingStatus.value = 'recording'
+    realTimeTips.value.push('🎤 录音中...')
+    
+    // 保存MediaRecorder实例，用于停止录音
+    window.currentMediaRecorder = mediaRecorder
+  } catch (error) {
+    console.error('开始录音失败:', error)
+    let errorMessage = '无法访问麦克风设备，请检查权限设置'
+    
+    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+      errorMessage = '麦克风权限被拒绝，请在浏览器设置中允许麦克风访问'
+      showErrorMessage('麦克风权限被拒绝，请在浏览器设置中允许麦克风访问后重试', '提示')
+    } else if (error.name === 'NotFoundError' || error.message.includes('No device found')) {
+      errorMessage = '未检测到麦克风设备，请连接麦克风后重试'
+    } else if (error.name === 'NotReadableError') {
+      errorMessage = '麦克风设备被占用，请关闭其他使用麦克风的应用'
+    } else if (error.name === 'OverconstrainedError') {
+      errorMessage = '无法满足录音设备要求，请尝试调整麦克风设置'
+    } else if (error.name === 'AbortError') {
+      errorMessage = '录音已被取消'
+    } else {
+      // 移动端特殊处理：更友好的错误提示
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      if (isMobile) {
+        errorMessage = '录音启动失败，请重试。建议使用Chrome浏览器获得最佳体验'
+      }
+    }
+    
+    realTimeTips.value.push(`❌ ${errorMessage}`)
+    isRecording.value = false
+    recordingStatus.value = 'idle'
+  }
+}
+
+// 停止录音
+const stopRecording = () => {
+  // 停止MediaRecorder实例
+  if (window.currentMediaRecorder && window.currentMediaRecorder.state !== 'inactive') {
+    window.currentMediaRecorder.stop()
+    window.currentMediaRecorder = null
+  }
+  
+  // 停止音频流
+  if (audioStream) {
+    audioStream.getTracks().forEach(track => track.stop())
+    audioStream = null
+  }
+  
+  recordingStatus.value = 'completed'
+  realTimeTips.value.push('✅ 录音已完成')
+  
+  // 1秒后恢复空闲状态
+  setTimeout(() => {
+    recordingStatus.value = 'idle'
+  }, 1000)
 }
 
 // 在组件挂载时初始化语音识别
@@ -776,14 +1060,12 @@ onMounted(async () => {
   }
 })
 
-// 组件卸载时停止语音识别
+// 组件卸载时停止录音
 onUnmounted(() => {
   if (timer) {
     clearInterval(timer)
   }
-  if (recognition && recognition.state === 'running') {
-    recognition.stop()
-  }
+  stopRecording()
 })
 
 const toggleRecording = async () => {
@@ -792,85 +1074,18 @@ const toggleRecording = async () => {
     return
   }
   
-  // 添加防抖动机制，避免快速连续点击开始录音
-  // 只在开始录音时检查，停止录音操作不受限制
-  if (!isRecording.value && (isRecognitionStarting || isRecognitionRunning)) {
-    console.log('录音操作正在进行中，请稍候')
-    return
-  }
-  
   if (isRecording.value) {
     // 停止录音
     console.log('停止录音...')
-    recordingStatus.value = 'processing'
-    realTimeTips.value.push('⏳ 正在处理录音...')
-    
-    // 停止语音识别
-    if (recognition && (recognition.state === 'running' || recognition.state === 'starting')) {
-      try {
-        recognition.stop()
-      } catch (stopError) {
-        console.error('停止录音时出错:', stopError)
-      }
-    }
-    
     isRecording.value = false
-    
-    // 延迟更新状态，让用户看到处理过程
-    setTimeout(() => {
-      recordingStatus.value = 'completed'
-      realTimeTips.value.push('✅ 录音已完成')
-      
-      // 1秒后恢复空闲状态，并重新初始化recognition实例
-      setTimeout(() => {
-        recordingStatus.value = 'idle'
-        // 重新初始化recognition实例，避免状态混乱
-        initSpeechRecognition()
-      }, 1000)
-    }, 500)
+    stopRecording()
   } else {
     // 开始录音
+    console.log('开始录音...')
     isRecording.value = true
     recordingStatus.value = 'starting'
     realTimeTips.value.push('📤 正在准备录音...')
-    
-    try {
-      // 不再每次都请求麦克风权限，直接开始语音识别
-      console.log('开始语音识别...')
-      isRecognitionStarting = true
-      recognition.start()
-      
-    } catch (error) {
-      console.error('开始录音失败:', error)
-      let errorMessage = '无法访问麦克风设备，请检查权限设置'
-      
-      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-        errorMessage = '麦克风权限被拒绝，请在浏览器设置中允许麦克风访问'
-        // 添加更明显的提示
-        showErrorMessage('麦克风权限被拒绝，请在浏览器设置中允许麦克风访问后重试', '提示')
-      } else if (error.name === 'NotFoundError' || error.message.includes('No device found')) {
-        errorMessage = '未检测到麦克风设备，请连接麦克风后重试'
-      } else if (error.name === 'NotReadableError') {
-        errorMessage = '麦克风设备被占用，请关闭其他使用麦克风的应用'
-      } else if (error.name === 'OverconstrainedError') {
-        errorMessage = '无法满足录音设备要求，请尝试调整麦克风设置'
-      } else if (error.name === 'AbortError') {
-        errorMessage = '录音已被取消'
-      } else {
-        // 移动端特殊处理：更友好的错误提示
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-        if (isMobile) {
-          errorMessage = '录音启动失败，请重试。建议使用Chrome浏览器获得最佳体验'
-        }
-      }
-      
-      realTimeTips.value.push(`❌ ${errorMessage}`)
-      isRecording.value = false
-      isRecognitionStarting = false
-      recordingStatus.value = 'idle'
-      // 遇到错误时，重新初始化recognition实例
-      initSpeechRecognition()
-    }
+    await startRecording()
   }
 }
 

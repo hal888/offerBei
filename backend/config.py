@@ -65,3 +65,23 @@ AUTH_CONFIG = {
     "max_login_attempts": int(os.getenv("MAX_LOGIN_ATTEMPTS", "5")),  # 最大登录尝试次数
     "lock_duration": int(os.getenv("LOCK_DURATION", "300"))  # 账号锁定时间（秒）
 }
+
+# 阿里云ASR配置
+ALIYUN_ASR_CONFIG = {
+    "access_key_id": os.getenv("ALIYUN_ACCESS_KEY_ID", ""),
+    "access_key_secret": os.getenv("ALIYUN_ACCESS_KEY_SECRET", ""),
+    "app_key": os.getenv("ALIYUN_ASR_APP_KEY", ""),
+    "region_id": os.getenv("ALIYUN_REGION_ID", "cn-shanghai"),
+    "format": os.getenv("ALIYUN_ASR_FORMAT", "wav"),
+    "sample_rate": int(os.getenv("ALIYUN_ASR_SAMPLE_RATE", "16000")),
+    "enable_punctuation_prediction": os.getenv("ALIYUN_ASR_ENABLE_PUNCTUATION", "True").lower() == "true",
+    "enable_inverse_text_normalization": os.getenv("ALIYUN_ASR_ENABLE_ITN", "True").lower() == "true"
+}
+
+# 阿里云ASR服务URL
+ALIYUN_ASR_URL = {
+    "cn-shanghai": "https://nls-gateway-cn-shanghai.aliyuncs.com",
+    "cn-beijing": "https://nls-gateway-cn-beijing.aliyuncs.com",
+    "cn-hangzhou": "https://nls-gateway-cn-hangzhou.aliyuncs.com",
+    "ap-southeast-1": "https://nls-gateway-ap-southeast-1.aliyuncs.com"
+}

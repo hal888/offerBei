@@ -19,7 +19,9 @@ from config import (
     SQLALCHEMY_POOL_SIZE, 
     SQLALCHEMY_MAX_OVERFLOW,
     MAIL_CONFIG,
-    JWT_CONFIG
+    JWT_CONFIG,
+    ALIYUN_ASR_CONFIG,
+    ALIYUN_ASR_URL
 )
 
 # 配置SQLAlchemy
@@ -45,6 +47,7 @@ from .models import db
 
 # 初始化SQLAlchemy
 db.init_app(app)
+
 
 # 导入路由
 from .routes import resume, self_intro, question_bank, mock_interview, strategy, auth

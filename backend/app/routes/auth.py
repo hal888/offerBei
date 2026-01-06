@@ -20,7 +20,7 @@ def generate_verification_code():
 # 发送邮箱验证码
 def send_verification_email(email, code):
     try:
-        msg = Message('AI面试助手 - 邮箱验证码', recipients=[email])
+        msg = Message('Offer贝 - 邮箱验证码', recipients=[email])
         msg.body = f'您的邮箱验证码是：{code}，有效期为15分钟。请勿将验证码泄露给他人。'
         mail.send(msg)
         return True
@@ -31,7 +31,7 @@ def send_verification_email(email, code):
 # 发送密码重置邮件
 def send_reset_password_email(email, reset_link):
     try:
-        msg = Message('AI面试助手 - 密码重置链接', recipients=[email])
+        msg = Message('Offer贝 - 密码重置链接', recipients=[email])
         msg.body = f'您请求重置密码，点击以下链接重置密码：{reset_link}\n\n该链接有效期为24小时，请及时使用。如果不是您本人操作，请忽略此邮件。'
         mail.send(msg)
         return True
