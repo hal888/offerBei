@@ -1,8 +1,8 @@
 <template>
   <div class="login-container">
     <div class="login-card">
-      <h1 class="login-title">AI智能面试宝典</h1>
-      <p class="login-subtitle">登录系统，开启您的面试优化之旅</p>
+      <h1 class="login-title">Offer贝，面试必备</h1>
+      <p class="login-subtitle">AI 赋能，让 Offer 更近一步</p>
       
       <div class="login-form">
         <!-- 邮箱输入框 -->

@@ -1,8 +1,8 @@
 <template>
   <div class="register-container">
     <div class="register-card">
-      <h1 class="register-title">AI智能面试宝典</h1>
-      <p class="register-subtitle">创建账号，开启您的面试优化之旅</p>
+      <h1 class="register-title">Offer贝，面试必备</h1>
+      <p class="register-subtitle">AI 赋能，让 Offer 更近一步</p>
       
       <div class="register-form">
         <!-- 邮箱输入框 -->

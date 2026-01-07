@@ -1,7 +1,7 @@
 <template>
   <div class="forgot-password-container">
     <div class="forgot-password-card">
-      <h1 class="forgot-password-title">AI智能面试宝典</h1>
+      <h1 class="forgot-password-title">Offer贝，面试必备</h1>
       <p class="forgot-password-subtitle">重置您的密码</p>
       <p class="forgot-password-description">请输入您的注册邮箱，我们将向您发送密码重置链接</p>
       
