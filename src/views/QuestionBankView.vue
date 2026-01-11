@@ -184,6 +184,12 @@ const isGenerating = ref(false)
 
 // 页面加载时自动获取已生成的题库数据
 onMounted(async () => {
+  // 验证selectedCount是否在允许范围内，如果是100则重置为50
+  const allowedCounts = [10, 30, 50]
+  if (!allowedCounts.includes(selectedCount.value)) {
+    console.warn(`[WARNING] selectedCount=${selectedCount.value}不在允许范围内，重置为50`)
+    selectedCount.value = 50
+  }
   try {
     // 从localStorage获取userId
     const userId = localStorage.getItem('userId')
@@ -240,13 +246,12 @@ const fetchQuestionBank = async () => {
   }
 }
 
-const questionCounts = [10, 30, 50, 100]
+const questionCounts = [10, 30, 50]
 
 const getCountDescription = (count) => {
   if (count === 10) return '极简模式，适合快速体验或重点突破'
   if (count === 30) return '快速模式，适合时间紧张的用户'
   if (count === 50) return '标准模式，平衡深度和广度'
-  if (count === 100) return '压测模式，全面覆盖所有可能问题'
   return ''
 }
 
@@ -265,16 +270,33 @@ const generateQuestions = () => {
     localStorage.setItem('userId', userId)
   }
   
-  console.log('topic:', customTopic.value)
-  console.log('userId:', userId)
+  console.log('[DEBUG] 准备生成题库')
+  console.log('[DEBUG] selectedCount.value:', selectedCount.value)
+  console.log('[DEBUG] topic:', customTopic.value)
+  console.log('[DEBUG] userId:', userId)
+  
+  // 验证count值是否在允许范围内
+  const allowedCounts = [10, 30, 50]
+  const countToSend = allowedCounts.includes(selectedCount.value) ? selectedCount.value : 50
+  
+  if (countToSend !== selectedCount.value) {
+    console.error(`[ERROR] selectedCount=${selectedCount.value}不合法，使用默认值50`)
+  }
+  
+  console.log('[DEBUG] 实际发送的count参数:', countToSend)
   
   // 调用后端API，不传递resumeId参数
   apiClient.post('/question-bank/generate', {
-    count: selectedCount.value,
+    count: countToSend,
     topic: customTopic.value,
     userId: userId
   })
   .then(response => {
+    // 添加调试日志
+    console.log('[DEBUG] 题库生成成功，收到响应:', response.data)
+    console.log('[DEBUG] questions数组:', response.data.questions)
+    console.log('[DEBUG] questions数量:', response.data.questions ? response.data.questions.length : 0)
+    
     // 格式化问题数据，添加showAnswer字段
   questions.value = response.data.questions.map(q => ({
     ...q,
@@ -294,9 +316,14 @@ const generateQuestions = () => {
     if (response.data.resumeId) {
       localStorage.setItem('resumeId', response.data.resumeId)
     }
+    
+    console.log('[DEBUG] 题库已成功加载到页面')
   })
   .catch(error => {
-    console.error('生成题库失败:', error)
+    console.error('[ERROR] 生成题库失败:', error)
+    console.error('[ERROR] 错误详情:', error.response)
+    console.error('[ERROR] 错误消息:', error.message)
+    
     if (error.isUnauthorized) {
       // 401错误，显示请先登录提示，点击确定后跳转到登录页
       showErrorMessage('请先登录', '提示', () => {

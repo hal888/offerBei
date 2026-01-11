@@ -105,8 +105,8 @@ def get_self_intro():
         
         # 查询自我介绍数据
         if intro_type:
-            # 查询指定类型的自我介绍
-            self_intro = SelfIntro.query.filter_by(self_intro_type=intro_type, user_id=user_id).first()
+            # 查询指定类型的最新自我介绍
+            self_intro = SelfIntro.query.filter_by(self_intro_type=intro_type, user_id=user_id).order_by(SelfIntro.updated_at.desc()).first()
         else:
             # 查询最新的自我介绍
             self_intro = SelfIntro.query.filter_by(user_id=user_id).order_by(SelfIntro.updated_at.desc()).first()

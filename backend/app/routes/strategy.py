@@ -68,12 +68,6 @@ def analysis():
             # 移除所有控制字符，除了制表符、换行符和回车符
             json_content = re.sub(r'[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]', '', json_content)
             
-            # 清理可能的特殊字符和格式问题
-            # 移除多余的空格和换行符
-            json_content = re.sub(r'\s+', ' ', json_content)
-            # 确保冒号后有空格，逗号后有空格
-            json_content = re.sub(r':', ': ', json_content)
-            json_content = re.sub(r',', ', ', json_content)
             # 清理JSON字符串中的中文引号
             json_content = re.sub(r'[“”]', '"', json_content)
             json_content = re.sub(r'[‘’]', "'", json_content)
@@ -84,7 +78,7 @@ def analysis():
             result = json.loads(json_content)
         except json.JSONDecodeError as e:
             print(f"JSON解析错误: {e}")
-            print(f"JSON内容片段（错误位置附近）: {json_content[max(0, 3220-20):3220+20]}")
+            print(f"完整的JSON内容: {json_content}")
             # 使用默认分析结果作为备选
             result = {
                 "sections": [
@@ -280,12 +274,6 @@ def questions():
             # 移除所有控制字符，除了制表符、换行符和回车符
             json_content = re.sub(r'[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]', '', json_content)
             
-            # 清理可能的特殊字符和格式问题
-            # 移除多余的空格和换行符
-            json_content = re.sub(r'\s+', ' ', json_content)
-            # 确保冒号后有空格，逗号后有空格
-            json_content = re.sub(r':', ': ', json_content)
-            json_content = re.sub(r',', ', ', json_content)
             # 清理JSON字符串中的中文引号
             json_content = re.sub(r'[“”]', '"', json_content)
             json_content = re.sub(r'[‘’]', "'", json_content)
@@ -296,7 +284,7 @@ def questions():
             result = json.loads(json_content)
         except json.JSONDecodeError as e:
             print(f"JSON解析错误: {e}")
-            print(f"JSON内容片段（错误位置附近）: {json_content[max(0, 3220-20):3220+20] if len(json_content) > 3220 else json_content}")
+            print(f"完整的JSON内容: {json_content}")
             # 使用默认问题作为备选
             result = {
                 "questions": [

@@ -118,8 +118,8 @@ def generate():
         api_result = response.choices[0].message.content
         
         # 保存原始响应到文件，便于调试
-        with open('question_bank_response.txt', 'w', encoding='utf-8') as f:
-            f.write(api_result)
+        # with open('question_bank_response.txt', 'w', encoding='utf-8') as f:
+        #     f.write(api_result)
         
         # 解析JSON响应
         import json
@@ -178,12 +178,21 @@ def generate():
             print(f"保存题库到数据库失败: {e}")
             db.session.rollback()
         
-        return jsonify({
-            "questions": result.get("questions", []),
-            "total": result.get("total", 0),
+        # 获取生成的问题列表
+        questions_list = result.get("questions", [])
+        
+        # 添加调试日志
+        print(f"[DEBUG] 成功生成题库: 问题数量={len(questions_list)}")
+        print(f"[DEBUG] 返回响应结构: questions数量={len(questions_list)}, total={len(questions_list)}, topic={topic}, userId={user_id}")
+        
+        response_data = {
+            "questions": questions_list,
+            "total": len(questions_list),  # 从实际问题数量计算，而不是依赖LLM返回的total字段
             "topic": topic,
             "userId": user_id  # 返回user_id，前端保存到localStorage
-        }), 200
+        }
+        
+        return jsonify(response_data), 200
         
     except Exception as e:
         print(f"生成题库失败: {e}")

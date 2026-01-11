@@ -574,11 +574,14 @@ const initSpeechRecognition = () => {
   // 检查浏览器是否支持MediaRecorder
   if (!navigator.mediaDevices || !window.MediaRecorder) {
     isSpeechSupported.value = false
+    console.error('浏览器不支持MediaRecorder API')
     realTimeTips.value.push('您的浏览器不支持MediaRecorder功能，请使用Chrome或Edge等现代浏览器')
     return
   }
   
-  console.log('MediaRecorder API 初始化完成')
+  // 明确设置为支持
+  isSpeechSupported.value = true
+  console.log('MediaRecorder API 初始化完成，浏览器支持语音识别功能')
 }
 
 // 将AudioBuffer转换为WAV格式
@@ -1052,6 +1055,7 @@ onMounted(async () => {
   initSpeechRecognition()
   
   // 在组件挂载时请求麦克风权限，避免每次录音都请求
+  // 注意：权限失败不代表浏览器不支持，只是用户拒绝了权限
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ 
       audio: {
@@ -1067,9 +1071,15 @@ onMounted(async () => {
     stream.getTracks().forEach(track => track.stop())
     console.log('麦克风权限已获取')
   } catch (error) {
-    console.error('获取麦克风权限失败:', error)
-    isSpeechSupported.value = false
-    realTimeTips.value.push('获取麦克风权限失败，请在浏览器设置中允许麦克风访问')
+    console.warn('获取麦克风权限失败:', error)
+    // 不要设置 isSpeechSupported.value = false，因为这只是权限问题，不是浏览器支持问题
+    // 权限相关的错误会在 startRecording 函数中处理
+    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+      console.log('用户拒绝了麦克风权限，但浏览器仍然支持录音功能')
+      realTimeTips.value.push('麦克风权限未授予，点击录音按钮时会再次请求权限')
+    } else {
+      realTimeTips.value.push('麦克风初始化提示：首次录音时会请求权限')
+    }
   }
 })
 

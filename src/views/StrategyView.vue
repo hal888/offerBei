@@ -229,7 +229,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onActivated } from 'vue'
 import { useRouter } from 'vue-router'
 import ErrorMessage from '@/components/ErrorMessage.vue'
 import apiClient from '@/utils/api.js'
@@ -382,6 +382,9 @@ const fetchAnalysisHistory = async () => {
     if (response.data && response.data.length > 0) {
       // 使用最新的分析结果
       analysisResult.value = response.data[0].result
+    } else {
+      // 如果没有历史记录，清空当前数据
+      analysisResult.value = null
     }
   } catch (error) {
     console.error('获取画像分析历史失败:', error)
@@ -395,7 +398,8 @@ const fetchAnalysisHistory = async () => {
         router.push('/resume')
       })
     }
-    // 其他错误忽略，继续执行
+    // 其他错误时也清空数据
+    analysisResult.value = null
   }
 }
 
@@ -411,6 +415,11 @@ const fetchQuestionsHistory = async () => {
       // 恢复公司信息
       companyInfo.value.companyName = response.data[0].company_name || ''
       companyInfo.value.position = response.data[0].position || ''
+    } else {
+      // 如果没有历史记录，清空当前数据
+      generatedQuestions.value = []
+      companyInfo.value.companyName = ''
+      companyInfo.value.position = ''
     }
   } catch (error) {
     console.error('获取反问问题历史失败:', error)
@@ -424,17 +433,30 @@ const fetchQuestionsHistory = async () => {
         router.push('/resume')
       })
     }
-    // 其他错误忽略，继续执行
+    // 其他错误时也清空数据
+    generatedQuestions.value = []
+    companyInfo.value.companyName = ''
+    companyInfo.value.position = ''
   }
 }
 
-// 页面加载时自动获取已有的面试策略内容
-onMounted(async () => {
+// 统一加载历史数据的函数
+const loadHistoryData = async () => {
   // 同时获取画像分析历史和反问问题历史
   await Promise.all([
     fetchAnalysisHistory(),
     fetchQuestionsHistory()
   ])
+}
+
+// 页面加载时自动获取已有的面试策略内容
+onMounted(async () => {
+  await loadHistoryData()
+})
+
+// 每次组件激活时（包括从其他路由返回时）都重新加载数据
+onActivated(async () => {
+  await loadHistoryData()
 })
 
 const exportStrategy = async () => {

@@ -199,7 +199,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onActivated } from 'vue'
+import { ref, computed, onMounted, onActivated, watch } from 'vue'
 import apiClient from '@/utils/api.js'
 import { useRouter } from 'vue-router'
 import ErrorMessage from '@/components/ErrorMessage.vue'
@@ -657,8 +657,12 @@ const updateFormattedResume = async () => {
   }
 }
 
-// 监听resumeData变化
-resumeData.value && updateFormattedResume()
+// 监听resumeData变化，自动更新formattedResume
+watch(resumeData, async (newValue) => {
+  if (newValue) {
+    await updateFormattedResume()
+  }
+}, { deep: true })
 
 // 下载简历功能 - PDF格式
 const downloadResume = async () => {
