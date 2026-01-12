@@ -48,7 +48,7 @@ def analysis():
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
-            max_tokens=8124
+            max_tokens=8192
         )
         
         # 解析API返回结果
@@ -254,7 +254,7 @@ def questions():
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
-            max_tokens=8124
+            max_tokens=8192
         )
         
         # 解析API返回结果

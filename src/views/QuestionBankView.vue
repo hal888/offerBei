@@ -197,8 +197,8 @@ onMounted(async () => {
     // 如果没有userId，不自动加载数据（等待用户第一次生成）
     if (!userId) return
     
-    // 调用后端API获取已生成的题库数据
-    await fetchQuestionBank()
+    // 调用后端API获取已生成的题库数据（不阻塞页面渲染）
+    fetchQuestionBank()  // 移除await，让请求在后台进行，不阻塞页面加载
   } catch (error) {
     console.log('获取已生成题库失败:', error)
     // 忽略错误，等待用户手动生成
