@@ -20,6 +20,7 @@ URL_PRIORITY_MAP = {
     "index": 1.0,       # 首页
     "category": 0.8,    # 栏目页
     "article": 0.6      # 内容页
+    
 }
 # 日志保存路径
 LOG_FILE = "../baidu_push.log"
