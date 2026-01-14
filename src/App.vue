@@ -2,6 +2,7 @@
 // App.vue - Main application component with navigation
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import Footer from '@/components/Footer.vue'
 
 // 导航栏显示状态
 const navbarVisible = ref(true)
@@ -190,20 +191,47 @@ onMounted(() => {
             </router-link>
           </div>
           <!-- 移动端折叠按钮 -->
-          <!-- <button class="navbar-toggle" @click="toggleMenu" aria-label="Toggle navigation">
+          <button class="navbar-toggle" @click="toggleMenu" aria-label="Toggle navigation">
             <span class="navbar-toggle-icon">{{ isMenuExpanded ? '✕' : '☰' }}</span>
-          </button> -->
+          </button>
         </div>
         
         <div class="navbar-menu" :class="{ 'menu-expanded': isMenuExpanded && isMobileView }">
-          <router-link to="/" class="nav-link" exact-active-class="active" @click="closeMenu">首页</router-link>
-          <router-link to="/resume" class="nav-link" exact-active-class="active" @click="closeMenu">简历优化</router-link>
-          <router-link to="/self-intro" class="nav-link" exact-active-class="active" @click="closeMenu">自我介绍</router-link>
-          <router-link to="/question-bank" class="nav-link" exact-active-class="active" @click="closeMenu">智能题库</router-link>
-          <router-link to="/mock-interview" class="nav-link" exact-active-class="active" @click="closeMenu">模拟面试</router-link>
-          <router-link to="/strategy" class="nav-link" exact-active-class="active" @click="closeMenu">面试策略</router-link>
+          <!-- Default Navigation for Visitors -->
+          <template v-if="!isUserLoggedIn">
+            <router-link to="/" class="nav-link" exact-active-class="active" @click="closeMenu">首页</router-link>
+            
+            <!-- Product Features Dropdown -->
+            <div class="nav-dropdown">
+              <span class="nav-link dropdown-trigger">产品功能 <i class="icon-down">▾</i></span>
+              <div class="dropdown-content">
+                <router-link to="/resume" class="dropdown-item" @click="closeMenu">简历优化</router-link>
+                <router-link to="/self-intro" class="dropdown-item" @click="closeMenu">自我介绍</router-link>
+                <router-link to="/question-bank" class="dropdown-item" @click="closeMenu">智能题库</router-link>
+                <router-link to="/mock-interview" class="dropdown-item" @click="closeMenu">模拟面试</router-link>
+                <router-link to="/strategy" class="dropdown-item" @click="closeMenu">面试策略</router-link>
+              </div>
+            </div>
+
+            <router-link to="/manual" class="nav-link" exact-active-class="active" @click="closeMenu">使用教程</router-link>
+          </template>
+
+          <!-- Navigation for Logged-in Users -->
+          <template v-else>
+            <router-link to="/resume" class="nav-link" exact-active-class="active" @click="closeMenu">简历优化</router-link>
+            <router-link to="/self-intro" class="nav-link" exact-active-class="active" @click="closeMenu">自我介绍</router-link>
+            <router-link to="/question-bank" class="nav-link" exact-active-class="active" @click="closeMenu">智能题库</router-link>
+            <router-link to="/mock-interview" class="nav-link" exact-active-class="active" @click="closeMenu">模拟面试</router-link>
+            <router-link to="/strategy" class="nav-link" exact-active-class="active" @click="closeMenu">面试策略</router-link>
+          </template>
+          
+          <div class="nav-spacer"></div>
+
           <template v-if="isUserLoggedIn">
             <button class="nav-link logout-btn" @click="handleLogout">退出登录</button>
+          </template>
+          <template v-else>
+            <router-link to="/login" class="nav-link btn-login" @click="closeMenu">登录/注册</router-link>
           </template>
         </div>
       </div>
@@ -214,24 +242,9 @@ onMounted(() => {
       <router-view />
     </main>
 
-    <nav class="mobile-navbar">
-      <div class="mobile-nav-container">
-        <router-link to="/" class="nav-link" exact-active-class="active">首页</router-link>
-        <router-link to="/resume" class="nav-link" exact-active-class="active">简历优化</router-link>
-        <router-link to="/self-intro" class="nav-link" exact-active-class="active">自我介绍</router-link>
-        <router-link to="/question-bank" class="nav-link" exact-active-class="active">智能题库</router-link>
-        <router-link to="/mock-interview" class="nav-link" exact-active-class="active">模拟面试</router-link>
-        <router-link to="/strategy" class="nav-link" exact-active-class="active">面试策略</router-link>
-        <template v-if="isUserLoggedIn">
-          <button class="nav-link logout-btn" @click="handleLogout">退出登录</button>
-        </template>
-        <!-- <template v-else>
-          <router-link to="/login" class="nav-link login-btn" exact-active-class="active">登录</router-link>
-          <router-link to="/register" class="nav-link register-btn" exact-active-class="active">注册</router-link>
-        </template> -->
-      </div>
-    </nav>
 
+
+    <Footer />
   </div>
 </template>
 
@@ -548,27 +561,37 @@ onMounted(() => {
   }
   
   /* 调整导航链接 */
+  /* 调整导航链接 */
+  /* 调整导航链接 */
   .nav-link {
-    font-size: 1.5rem !important;
-    padding: 25px 30px !important;
+    font-size: 1rem !important; /* Unified font size */
+    padding: 16px 20px !important;
     text-align: center !important;
-    min-width: auto !important;
-    border-radius: 16px !important;
-    font-weight: 600 !important;
-    line-height: 1.6 !important;
+    width: 100% !important;
+    border-radius: 12px !important;
+    font-weight: 500 !important;
+    line-height: 1.5 !important;
     color: var(--color-text) !important;
     font-family: var(--font-sans) !important;
+    border-bottom: 1px solid rgba(0,0,0,0.03) !important;
+    margin-bottom: 4px !important;
+  }
+
+  /* 移除最后一个链接的边框 */
+  .nav-link:last-child {
+    border-bottom: none !important;
   }
   
   /* 优化退出登录按钮样式 */
   .nav-link.logout-btn {
-    font-size: 1.5rem !important;
-    padding: 25px 30px !important;
+    font-size: 1rem !important; /* Unified font size */
+    padding: 16px 20px !important;
     font-weight: 600 !important;
-    background-color: rgba(231, 76, 60, 0.15) !important;
-    border-color: #e74c3c !important;
-    color: #e74c3c !important;
-    border-radius: 16px !important;
+    background-color: rgba(102, 126, 234, 0.05) !important;
+    border-color: var(--color-primary) !important;
+    color: var(--color-primary) !important;
+    border-radius: 12px !important;
+    margin-top: 10px !important;
   }
   
   /* 显示移动端顶部品牌 */
@@ -578,125 +601,25 @@ onMounted(() => {
   
   /* 移除移动端底部导航样式 */
   .mobile-navbar {
-    display: block;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: var(--color-bg);
-    box-shadow: 0 -2px 10px var(--color-shadow);
-    z-index: 1000;
-    padding: 15px 0;
-    padding-bottom: env(safe-area-inset-bottom);
+    display: none !important;
   }
   
-  /* 移动端导航容器 */
-  .mobile-nav-container {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    max-width: var(--content-max);
-    margin: 0 auto;
-    padding: 0 10px;
-    gap: 10px;
-  }
-  
-  /* 移动端导航链接 */
-  .mobile-navbar .nav-link {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    flex: 1;
-    padding: 15px 12px;
-    text-align: center;
-    font-size: 0.9rem !important;
-    font-weight: 500 !important;
-    min-width: 0;
-    border: none !important;
-    gap: 8px;
-    color: var(--color-text-secondary) !important;
-    transition: all 0.3s ease !important;
-    border-radius: 16px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    background-color: transparent;
-    position: relative;
-  }
-  
-  /* 移动端导航链接悬停效果 */
-  .mobile-navbar .nav-link:hover {
-    background-color: rgba(102, 126, 234, 0.12) !important;
-    color: var(--color-primary) !important;
-    transform: translateY(-3px) !important;
-    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.2) !important;
-  }
-  
-  /* 移动端导航链接激活状态 */
-  .mobile-navbar .nav-link.active {
-    color: var(--color-primary) !important;
-    font-weight: 600 !important;
-    background-color: rgba(102, 126, 234, 0.15) !important;
-    transform: translateY(-3px) !important;
-    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.25) !important;
-  }
-  
-  /* 移除旧的下划线样式 */
-  .mobile-navbar .nav-link.active::after {
-    content: none !important;
-  }
-  
-  /* 移动端导航链接顶部装饰条 */
-  .mobile-navbar .nav-link::before {
-    content: '' !important;
-    position: absolute !important;
-    top: 0 !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    width: 0 !important;
-    height: 4px !important;
-    background-color: var(--color-primary) !important;
-    border-radius: 4px !important;
-    transition: all 0.3s ease !important;
-  }
-  
-  /* 移动端导航链接悬停和激活状态的顶部装饰条 */
-  .mobile-navbar .nav-link:hover::before,
-  .mobile-navbar .nav-link.active::before {
-    width: 70% !important;
-  }
-  
-  /* 调整主内容区，避免被底部导航遮挡 */
+  /* 调整主内容区 */
   .main-content {
-    padding-bottom: 100px;
+    padding-bottom: 0 !important;
   }
   
   /* 调整移动端footer */
   .footer {
-    margin-bottom: 80px;
+    margin-bottom: 0 !important;
   }
-  
+
   /* 小屏幕手机优化 */
   @media (max-width: 375px) {
-    .mobile-navbar .nav-link {
-      font-size: 0.85rem !important;
-      padding: 12px 6px;
-    }
-    
-    .mobile-navbar {
-      padding: 12px 0;
-    }
-    
     .navbar-toggle {
       font-size: 1.8rem !important;
       width: 45px !important;
       height: 45px !important;
-    }
-    
-    .nav-link {
-      font-size: 1.1rem !important;
-      padding: 18px 18px !important;
     }
   }
 }
@@ -795,6 +718,7 @@ onMounted(() => {
   justify-content: flex-end;
 }
 
+
 .nav-link {
   text-decoration: none !important;
   color: var(--color-text-secondary) !important;
@@ -807,33 +731,140 @@ onMounted(() => {
   align-items: center !important;
   justify-content: center !important;
   padding: 12px 16px !important;
-  min-width: 90px !important;
+  min-width: unset !important; /* Allow variable width */
   text-align: center !important;
   border-radius: 8px !important;
   border: 2px solid transparent !important;
   box-sizing: border-box !important;
-  overflow: hidden !important;
+  overflow: visible !important; /* Allow dropdown to show */
+  cursor: pointer !important;
 }
 
-.nav-link:hover {
+.nav-link:not(.btn-login):not(.btn-register):not(.dropdown-trigger):hover {
   color: var(--color-primary) !important;
-  text-decoration: none !important;
   background-color: rgba(102, 126, 234, 0.08) !important;
-  border-color: rgba(102, 126, 234, 0.2) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15) !important;
 }
 
 .nav-link.active {
   color: var(--color-primary) !important;
-  background-color: rgba(102, 126, 234, 0.1) !important;
-  border-color: var(--color-primary) !important;
   font-weight: 600 !important;
-  box-shadow: 0 2px 12px rgba(102, 126, 234, 0.25) !important;
-  transform: translateY(-2px) !important;
-  border-bottom: 2px solid var(--color-primary) !important;
-  padding-bottom: 12px !important;
 }
+
+/* Spacer to push login/register to right */
+.nav-spacer {
+  flex-grow: 1;
+}
+
+/* Dropdown Styles */
+.nav-dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+}
+
+.dropdown-trigger {
+  cursor: pointer;
+  gap: 4px;
+}
+
+.icon-down {
+  font-size: 0.8em;
+  transition: transform 0.3s ease;
+  display: inline-block;
+}
+
+.nav-dropdown:hover .icon-down {
+  transform: rotate(180deg);
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: white;
+  min-width: 160px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  border-radius: 12px;
+  padding: 8px 0;
+  z-index: 1001;
+  border: 1px solid rgba(0,0,0,0.05);
+  margin-top: 5px;
+}
+
+.nav-dropdown::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 15px;
+  background: transparent;
+}
+
+.nav-dropdown:hover .dropdown-content {
+  display: block;
+  animation: fadeIn 0.2s ease;
+}
+
+.dropdown-item {
+  display: block;
+  padding: 10px 20px;
+  text-decoration: none;
+  color: var(--color-text);
+  transition: all 0.2s;
+  font-size: 0.95rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.dropdown-item:hover {
+  background-color: #f8fafc;
+  color: var(--color-primary);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Auth Buttons */
+.btn-login, .btn-register {
+  padding: 10px 24px !important;
+  border-radius: 50px !important;
+  font-weight: 600 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  min-width: 80px !important;
+}
+
+.btn-login {
+  color: var(--color-primary) !important;
+  border: 1px solid var(--color-primary) !important;
+  background-color: transparent !important;
+  margin-left: 20px;
+}
+
+.btn-login:hover {
+  background-color: rgba(102, 126, 234, 0.1) !important;
+  transform: translateY(-2px) !important;
+}
+
+.btn-register {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+}
+
+.btn-register:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4) !important;
+  color: white !important;
+}
+
+
 
 /* 移除旧的下划线样式，使用边框和背景色替代 */
 .nav-link.active::after {
@@ -914,9 +945,9 @@ onMounted(() => {
 }
 
 .nav-link.logout-btn {
-  background-color: rgba(231, 76, 60, 0.1) !important;
-  border-color: #e74c3c !important;
-  color: #e74c3c !important;
+  background-color: rgba(102, 126, 234, 0.1) !important;
+  border-color: var(--color-primary) !important;
+  color: var(--color-primary) !important;
   font-weight: 600 !important;
   cursor: pointer !important;
   transition: all 0.3s ease !important;
@@ -926,9 +957,9 @@ onMounted(() => {
 }
 
 .nav-link.logout-btn:hover {
-  background-color: rgba(231, 76, 60, 0.2) !important;
+  background-color: rgba(102, 126, 234, 0.2) !important;
   transform: translateY(-2px) !important;
-  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2) !important;
 }
 
 /* 登录、注册、退出按钮激活状态样式 */
@@ -1076,58 +1107,7 @@ onMounted(() => {
   }
 }
 
-/* 移动设备优化 */
-@media (max-width: 768px) {
-  .navbar-container {
-    flex-direction: column;
-    padding: 15px 10px !important;
-    gap: 15px;
-    align-items: stretch;
-  }
-  
-  .navbar-brand {
-    justify-content: center;
-  }
-  
-  .brand-link {
-    justify-content: center;
-  }
-  
-  .brand-name {
-    font-size: 1.3rem !important;
-    max-width: none;
-    overflow: visible;
-    text-overflow: clip;
-  }
-  
-  .brand-icon {
-    font-size: 1.8rem !important;
-  }
-  
-  .navbar-menu {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px !important;
-    padding: 10px 0;
-  }
-  
-  .nav-link {
-    font-size: 0.85rem;
-    padding: 8px 12px;
-    min-width: 70px;
-    flex: 1;
-    max-width: 120px;
-  }
-  
-  .nav-link.active::after {
-    bottom: -6px !important;
-    height: 1.5px !important;
-  }
-  
-  .main-content {
-    padding: 20px 10px;
-  }
-}
+
 
 /* 小屏幕手机优化 */
   @media (max-width: 375px) {
@@ -1158,3 +1138,67 @@ onMounted(() => {
   }
 }
 </style>
+
+/* Mobile Optimizations for Dropdown and Auth */
+@media (max-width: 768px) {
+  /* Flatten dropdown in mobile menu */
+  .nav-dropdown {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+  }
+
+  /* Hide trigger text on mobile, just show items */
+  .dropdown-trigger {
+    display: none !important;
+  }
+
+  .dropdown-content {
+    display: flex !important;
+    position: static !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: transparent !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    min-width: unset !important;
+    opacity: 1 !important;
+  }
+
+  .dropdown-item {
+    font-size: 1.1rem !important;
+    padding: 16px 20px !important;
+    text-align: center !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    border-radius: 12px !important;
+    color: var(--color-text-secondary) !important; /* Slightly lighter for sub-items */
+    font-weight: 500 !important;
+    border-bottom: 1px solid rgba(0,0,0,0.03) !important;
+    margin-bottom: 4px !important;
+  }
+  
+  .dropdown-item:hover {
+    background-color: rgba(102, 126, 234, 0.08) !important;
+    color: var(--color-primary) !important;
+    padding-left: 20px !important; /* Prevent shift on mobile */
+  }
+
+  /* Adjust Auth Buttons for Mobile */
+  .btn-login, .btn-register {
+    width: 90% !important;
+    margin: 8px auto !important;
+    padding: 14px 0 !important;
+    font-size: 1.1rem !important;
+    border-radius: 50px !important;
+  }
+  
+  .btn-login {
+    margin-left: 0 !important;
+    margin-top: 20px !important; /* Separate from menu */
+  }
+}

@@ -102,6 +102,26 @@ const router = createRouter({
         keywords: '面试攻略,面试技巧,薪资谈判,面试避坑,面试反问,求职指导',
         description: '提供全面的面试攻略，包括薪资谈判技巧、常见陷阱规避、反问环节指导等，助您掌握面试主动权。'
       }
+    },
+    {
+      path: '/manual',
+      name: 'UserManual',
+      component: () => import('../views/UserManualView.vue'),
+      meta: {
+        title: '使用手册 - Offer贝',
+        keywords: 'Offer贝使用手册,面试工具指南,简历优化教程,模拟面试教程',
+        description: 'Offer贝全流程AI面试助手使用指南，教您如何高效使用简历优化、模拟面试、智能题库等功能。'
+      }
+    },
+    {
+      path: '/faq',
+      name: 'FAQ',
+      component: () => import('../views/FAQView.vue'),
+      meta: {
+        title: '常见问题解答 - Offer贝',
+        keywords: 'Offer贝常见问题,AI面试疑问,求职辅助工具,面试模拟QA',
+        description: '解答关于Offer贝的常见问题，包括产品功能、使用方法、隐私安全及面试技巧指导，助您更好地使用AI面试助手。'
+      }
     }
   ]
 
