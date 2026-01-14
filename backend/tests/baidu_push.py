@@ -164,7 +164,8 @@ def main():
     # 1. 准备你的网站URL列表（示例，需替换为真实URL）
     website_urls = [
         {"loc": f"{SITE_DOMAIN}", "type": "index", "lastmod": datetime.now().strftime("%Y-%m-%d")},
-        {"loc": f"{SITE_DOMAIN}/resume", "type": "resume", "lastmod": datetime.now().strftime("%Y-%m-%d")}
+        {"loc": f"{SITE_DOMAIN}/manual", "type": "manual", "lastmod": datetime.now().strftime("%Y-%m-%d")},
+        {"loc": f"{SITE_DOMAIN}/faq", "type": "faq", "lastmod": datetime.now().strftime("%Y-%m-%d")}
     ]
     
     # 2. 生成sitemap.xml

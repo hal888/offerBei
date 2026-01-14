@@ -7,7 +7,7 @@
         <p>一站式解决求职痛点：简历优化、自我介绍生成、智能题库、模拟面试。让每一次面试都自信满满。</p>
         <div class="cta-buttons">
           <router-link to="/resume" class="btn primary-btn" @click="trackEvent('home_cta_click', { button: 'start_now' })">立即开始免费使用</router-link>
-          <router-link to="/manual" class="btn secondary-btn" @click="trackEvent('home_cta_click', { button: 'manual' })">使用手册</router-link>
+          <router-link to="/manual" class="btn secondary-btn" @click="trackEvent('home_cta_click', { button: 'manual' })">使用教程</router-link>
         </div>
         <div class="hero-stats">
           <div class="stat-item">

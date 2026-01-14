@@ -21,7 +21,7 @@
       <div class="footer-column link-column">
         <h3>资源</h3>
         <ul>
-          <li><router-link to="/manual">使用手册</router-link></li>
+          <li><router-link to="/manual">使用教程</router-link></li>
           <li><router-link to="/faq">常见问题</router-link></li>
         </ul>
       </div>
