@@ -1,19 +1,19 @@
 <template>
   <div class="register-container">
     <div class="register-card">
-      <h1 class="register-title">Offer贝，面试必备</h1>
-      <p class="register-subtitle">AI 赋能，让 Offer 更近一步</p>
+      <h1 class="register-title">{{ t('auth.register.title') }}</h1>
+      <p class="register-subtitle">{{ t('auth.register.subtitle') }}</p>
       
       <div class="register-form">
         <!-- 邮箱输入框 -->
         <div class="form-group">
-          <label for="email" class="form-label">邮箱</label>
+          <label for="email" class="form-label">{{ t('auth.register.emailLabel') }}</label>
           <input 
             type="email" 
             id="email" 
             v-model="email" 
             class="form-input" 
-            placeholder="请输入您的邮箱" 
+            :placeholder="t('auth.register.emailPlaceholder')" 
             required
             @input="validateEmail; clearEmailError"
           />
@@ -22,14 +22,14 @@
         
         <!-- 验证码输入框和获取按钮 -->
         <div class="form-group code-group">
-          <label for="verificationCode" class="form-label">验证码</label>
+          <label for="verificationCode" class="form-label">{{ t('auth.register.codeLabel') }}</label>
           <div class="code-input-container">
             <input 
               type="text" 
               id="verificationCode" 
               v-model="verificationCode" 
               class="form-input code-input" 
-              placeholder="请输入验证码" 
+              :placeholder="t('auth.register.codePlaceholder')" 
               required
               @input="clearCodeError"
             />
@@ -38,7 +38,7 @@
               @click="getVerificationCode"
               :disabled="isGettingCode || emailError || !email.trim()"
             >
-              {{ isGettingCode ? `${countdown}s` : '获取验证码' }}
+              {{ isGettingCode ? `${countdown}s` : t('auth.register.getCode') }}
             </button>
           </div>
           <div v-if="codeError" class="error-message">{{ codeError }}</div>
@@ -46,13 +46,13 @@
         
         <!-- 密码输入框 -->
         <div class="form-group">
-          <label for="password" class="form-label">密码</label>
+          <label for="password" class="form-label">{{ t('auth.register.passwordLabel') }}</label>
           <input 
             type="password" 
             id="password" 
             v-model="password" 
             class="form-input" 
-            placeholder="请输入密码" 
+            :placeholder="t('auth.register.passwordPlaceholder')" 
             required
             @input="checkPasswordStrength"
           />
@@ -75,12 +75,12 @@
           :disabled="isLoading || !isFormValid"
         >
           <span v-if="isLoading" class="loading-spinner"></span>
-          {{ isLoading ? '注册中...' : '注册' }}
+          {{ isLoading ? t('auth.register.registering') : t('auth.register.registerBtn') }}
         </button>
         
         <!-- 登录链接 -->
         <div class="register-footer">
-          <p>已有账号？<button class="login-link" @click="handleLogin">立即登录</button></p>
+          <p>{{ t('auth.register.hasAccount') }}<button class="login-link" @click="handleLogin">{{ t('auth.register.loginLink') }}</button></p>
         </div>
       </div>
     </div>
@@ -98,11 +98,13 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import apiClient from '@/utils/api.js'
 import ErrorMessage from '@/components/ErrorMessage.vue'
 import { trackEvent } from '@/utils/analytics'
 
 const router = useRouter()
+const { t, locale } = useI18n()
 const email = ref('')
 const password = ref('')
 const verificationCode = ref('')
@@ -119,7 +121,7 @@ const passwordError = ref('')
 // 错误提示遮盖层
 const showError = ref(false)
 const errorMessage = ref('')
-const errorTitle = ref('注册失败')
+const errorTitle = ref(t('auth.register.title') || '注册失败')
 // 错误提示关闭后的回调函数
 const errorCloseCallback = ref(null)
 
@@ -162,10 +164,10 @@ const clearEmailError = () => {
 const validateEmail = () => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!email.value.trim()) {
-    emailError.value = '请输入邮箱'
+    emailError.value = t('auth.register.error.emailRequired')
     return false
   } else if (!emailRegex.test(email.value)) {
-    emailError.value = '请输入有效的邮箱格式'
+    emailError.value = t('auth.register.error.emailInvalid')
     return false
   } else {
     emailError.value = ''
@@ -177,7 +179,7 @@ const validateEmail = () => {
 const checkPasswordStrength = () => {
   const passwordValue = password.value
   if (!passwordValue.trim()) {
-    passwordError.value = '请输入密码'
+    passwordError.value = t('auth.register.error.passwordRequired')
     passwordStrength.value = 0
   } else {
     // 密码强度规则：至少8位，包含大小写字母、数字和特殊符号
@@ -204,31 +206,31 @@ const checkPasswordStrength = () => {
     switch (strength) {
       case 0:
       case 1:
-        passwordStrengthText.value = '弱'
+        passwordStrengthText.value = t('auth.register.passwordStrength.weak')
         passwordStrengthClass.value = 'weak'
         passwordStrengthWidth.value = '20%'
-        passwordError.value = '密码强度太弱'
+        passwordError.value = t('auth.register.passwordStrength.msg.tooWeak')
         break
       case 2:
-        passwordStrengthText.value = '中'
+        passwordStrengthText.value = t('auth.register.passwordStrength.medium')
         passwordStrengthClass.value = 'medium'
         passwordStrengthWidth.value = '40%'
-        passwordError.value = '密码强度一般'
+        passwordError.value = t('auth.register.passwordStrength.msg.general')
         break
       case 3:
-        passwordStrengthText.value = '强'
+        passwordStrengthText.value = t('auth.register.passwordStrength.strong')
         passwordStrengthClass.value = 'strong'
         passwordStrengthWidth.value = '60%'
         passwordError.value = ''
         break
       case 4:
-        passwordStrengthText.value = '很强'
+        passwordStrengthText.value = t('auth.register.passwordStrength.veryStrong')
         passwordStrengthClass.value = 'very-strong'
         passwordStrengthWidth.value = '80%'
         passwordError.value = ''
         break
       case 5:
-        passwordStrengthText.value = '极强'
+        passwordStrengthText.value = t('auth.register.passwordStrength.extremelyStrong')
         passwordStrengthClass.value = 'extremely-strong'
         passwordStrengthWidth.value = '100%'
         passwordError.value = ''
@@ -259,7 +261,10 @@ const getVerificationCode = async () => {
     countdown.value = 60
     
     // 调用后端API发送验证码
-    await apiClient.post('/auth/send-verification-code', { email: email.value })
+    await apiClient.post('/auth/send-verification-code', { 
+      email: email.value,
+      locale: locale.value
+    })
     
     // 开始倒计时
     countdownTimer = setInterval(() => {
@@ -279,7 +284,7 @@ const getVerificationCode = async () => {
 // 处理注册
 const handleRegister = async () => {
   if (!isFormValid.value) {
-    showErrorMessage('请填写完整的注册信息')
+    showErrorMessage(t('auth.register.error.incomplete'))
     return
   }
   

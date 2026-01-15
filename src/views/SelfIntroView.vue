@@ -1,23 +1,23 @@
 <template>
   <div class="self-intro-container">
-    <h1>定制化自我介绍生成</h1>
+    <h1>{{ $t('pages.selfIntro.title') }}</h1>
     
     <!-- 生成中遮盖层 -->
     <div v-if="isGenerating" class="generating-overlay">
       <div class="loading-container">
         <div class="loading-spinner"></div>
-        <h3>自我介绍生成中...</h3>
-        <p>正在根据您的简历生成个性化自我介绍，请稍候</p>
+        <h3>{{ t('loading.generatingIntro') }}</h3>
+        <p>{{ t('loading.generatingIntroDesc') }}</p>
       </div>
     </div>
     
     <div class="intro-generation-section">
       <div class="generation-card">
-        <h2>生成你的自我介绍</h2>
+        <h2>{{ $t('pages.selfIntro.desc') }}</h2>
         
         <div class="intro-options">
           <div class="option-group">
-            <label>选择版本长度</label>
+            <label>{{ $t('pages.selfIntro.version.label') }}</label>
             <div class="option-buttons">
               <button 
                 v-for="version in introVersions" 
@@ -32,7 +32,7 @@
           </div>
 
           <div class="option-group">
-            <label>选择语言风格</label>
+            <label>{{ $t('pages.selfIntro.style.label') }}</label>
             <div class="option-buttons">
               <button 
                 v-for="style in languageStyles" 
@@ -47,37 +47,37 @@
 
           <button class="generate-btn" @click="generateIntro">
             <span class="btn-icon">✨</span>
-            生成自我介绍
+            {{ $t('pages.selfIntro.generate') }}
           </button>
         </div>
       </div>
     </div>
 
     <div v-if="generatedIntro" class="intro-result-section">
-      <h2>生成结果</h2>
+      <h2>{{ $t('pages.selfIntro.preview') }}</h2>
       
       <div class="result-header">
         <div class="version-info">
           <span class="version-badge">{{ selectedVersion }}</span>
           <span class="style-badge">{{ selectedStyle }}</span>
-          <span class="time-estimate">预计朗读时间: {{ estimatedTime }}分钟</span>
+          <span class="time-estimate">{{ $t('pages.selfIntro.estimatedTime') }}: {{ estimatedTime }}分钟</span>
         </div>
         <div class="result-actions">
           <button class="action-btn" @click="copyIntro">
             <span class="action-icon">📋</span>
-            复制
+            {{ $t('pages.selfIntro.export.copy') }}
           </button>
           <button class="action-btn" @click="toggleTeleprompter">
             <span class="action-icon">📝</span>
-            {{ isTeleprompter ? '退出提词器' : '进入提词器' }}
+            {{ isTeleprompter ? $t('pages.selfIntro.teleprompter.exit') : $t('pages.selfIntro.teleprompter.enter') }}
           </button>
           <button class="action-btn" @click="exportToPDF">
             <span class="action-icon">📄</span>
-            导出PDF
+            {{ $t('pages.selfIntro.export.pdf') }}
           </button>
           <button class="action-btn" @click="regenerateIntro">
             <span class="action-icon">🔄</span>
-            重新生成
+            {{ $t('pages.selfIntro.regenerate') }}
           </button>
         </div>
       </div>
@@ -88,14 +88,14 @@
         </div>
         
         <div class="speech-controls">
-          <h3>语音朗读</h3>
+          <h3>{{ $t('pages.selfIntro.speechReading') }}</h3>
           <div class="control-buttons">
             <button class="control-btn" @click="togglePlay">
               <span class="control-icon">{{ isPlaying ? '⏸️' : '▶️' }}</span>
-              {{ isPlaying ? '暂停' : '播放' }}
+              {{ isPlaying ? $t('pages.selfIntro.player.pause') : $t('pages.selfIntro.player.play') }}
             </button>
             <div class="speed-control">
-              <label>语速:</label>
+              <label>{{ $t('pages.selfIntro.player.speed') }}:</label>
               <select v-model="playbackSpeed">
                 <option value="0.5">0.5x</option>
                 <option value="0.75">0.75x</option>
@@ -111,7 +111,7 @@
       <div v-else class="teleprompter-mode">
         <div class="teleprompter-controls">
           <div class="control-group">
-            <label>语速调节:</label>
+            <label>{{ $t('pages.selfIntro.teleprompter.speedAdjust') }}:</label>
             <input 
               type="range" 
               v-model="teleprompterSpeed" 
@@ -119,19 +119,19 @@
               max="10" 
               step="1"
             />
-            <span>{{ teleprompterSpeed }}级</span>
+            <span>{{ teleprompterSpeed }}{{ $t('pages.selfIntro.teleprompter.level') }}</span>
           </div>
           <div class="control-group">
-            <label>字体大小:</label>
+            <label>{{ $t('pages.selfIntro.teleprompter.fontSize') }}:</label>
             <select v-model="fontSize">
-              <option value="16">小</option>
-              <option value="20">中</option>
-              <option value="24">大</option>
-              <option value="28">超大</option>
+              <option value="16">{{ $t('pages.selfIntro.teleprompter.sizes.small') }}</option>
+              <option value="20">{{ $t('pages.selfIntro.teleprompter.sizes.medium') }}</option>
+              <option value="24">{{ $t('pages.selfIntro.teleprompter.sizes.large') }}</option>
+              <option value="28">{{ $t('pages.selfIntro.teleprompter.sizes.xlarge') }}</option>
             </select>
           </div>
           <div class="control-group">
-            <label>背景颜色:</label>
+            <label>{{ $t('pages.selfIntro.teleprompter.bgColor') }}:</label>
             <div class="color-options">
               <div 
                 v-for="color in bgColors" 
@@ -145,7 +145,7 @@
           </div>
           <button class="control-btn" @click="toggleTeleprompterPlay">
             <span class="control-icon">{{ isTeleprompterPlaying ? '⏸️' : '▶️' }}</span>
-            {{ isTeleprompterPlaying ? '暂停' : '开始滚动' }}
+            {{ isTeleprompterPlaying ? $t('pages.selfIntro.teleprompter.pause') : $t('pages.selfIntro.teleprompter.start') }}
           </button>
         </div>
 
@@ -170,11 +170,13 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import ErrorMessage from '@/components/ErrorMessage.vue'
 import apiClient from '@/utils/api.js'
 import { trackEvent } from '@/utils/analytics'
 
 const router = useRouter()
+const { t, locale } = useI18n()
 
 // 错误提示相关
 const showError = ref(false)
@@ -184,7 +186,7 @@ const errorTitle = ref('提示')
 const errorCloseCallback = ref(null)
 
 // 显示错误信息
-const showErrorMessage = (message, title = '提示', callback = null) => {
+const showErrorMessage = (message, title = t('alerts.title'), callback = null) => {
   errorMessage.value = message
   errorTitle.value = title
   errorCloseCallback.value = callback
@@ -195,7 +197,7 @@ const showErrorMessage = (message, title = '提示', callback = null) => {
 const closeError = () => {
   showError.value = false
   errorMessage.value = ''
-  errorTitle.value = '提示'
+  errorTitle.value = t('alerts.title')
   // 执行回调函数
   if (errorCloseCallback.value) {
     const callback = errorCloseCallback.value
@@ -204,8 +206,8 @@ const closeError = () => {
   }
 }
 
-const selectedVersion = ref('30秒电梯演讲版')
-const selectedStyle = ref('正式')
+const selectedVersion = ref(t('pages.selfIntro.version.elevator'))
+const selectedStyle = ref(t('pages.selfIntro.style.formal'))
 const generatedIntro = ref('')
 const isTeleprompter = ref(false)
 const isPlaying = ref(false)
@@ -237,6 +239,12 @@ onMounted(async () => {
   }
 })
 
+// 监听语言变化，重置选中的版本和风格
+watch(locale, () => {
+  selectedVersion.value = t('pages.selfIntro.version.elevator')
+  selectedStyle.value = t('pages.selfIntro.style.formal')
+})
+
 // 根据选择的版本和风格获取自我介绍
 const fetchSelfIntro = async () => {
   try {
@@ -264,11 +272,11 @@ const fetchSelfIntro = async () => {
     console.log('获取特定类型自我介绍失败:', error)
     if (error.isUnauthorized) {
       // 401错误，显示请先登录提示，点击确定后跳转到登录页
-      showErrorMessage('请先登录', '提示', () => {
+      showErrorMessage(t('alerts.loginRequired'), t('alerts.title'), () => {
         router.push('/login')
       })
     } else if (error.response && error.response.data && error.response.data.error === 'User not found') {
-      showErrorMessage('请先上传简历进行优化，然后再生成自我介绍', '提示', () => {
+      showErrorMessage(t('alerts.uploadResumeFirst'), t('alerts.title'), () => {
         router.push('/resume')
       })
     } else {
@@ -282,13 +290,17 @@ watch([selectedVersion, selectedStyle], () => {
   fetchSelfIntro()
 })
 
-const introVersions = [
-  { length: '30秒电梯演讲版', desc: '核心亮点速读' },
-  { length: '3分钟标准版', desc: '均衡覆盖各方面' },
-  { length: '5分钟深度版', desc: '结合项目细节与心路历程' }
-]
+const introVersions = computed(() => [
+  { length: t('pages.selfIntro.version.elevator'), desc: t('pages.selfIntro.version.elevatorDesc') },
+  { length: t('pages.selfIntro.version.standard'), desc: t('pages.selfIntro.version.standardDesc') },
+  { length: t('pages.selfIntro.version.detailed'), desc: t('pages.selfIntro.version.detailedDesc') }
+])
 
-const languageStyles = ['正式', '活泼', '专业', '亲切']
+const languageStyles = computed(() => [
+  t('pages.selfIntro.style.formal'),
+  t('pages.selfIntro.style.casual'),
+  t('pages.selfIntro.style.academic')
+])
 
 const bgColors = [
   { value: '#000000' },
@@ -333,11 +345,11 @@ const generateIntro = () => {
     console.error('生成自我介绍失败:', error)
     if (error.isUnauthorized) {
       // 401错误，显示请先登录提示，点击确定后跳转到登录页
-      showErrorMessage('请先登录', '提示', () => {
+      showErrorMessage(t('alerts.loginRequired'), t('alerts.title'), () => {
         router.push('/login')
       })
     } else {
-      showErrorMessage('生成自我介绍失败，请重试', '失败')
+      showErrorMessage(t('alerts.generateIntroFailed'), t('alerts.title'))
     }
   })
   .finally(() => {
@@ -347,7 +359,7 @@ const generateIntro = () => {
 
 const copyIntro = () => {
   navigator.clipboard.writeText(generatedIntro.value)
-  showErrorMessage('已复制到剪贴板', '提示')
+  showErrorMessage(t('alerts.copied'), t('alerts.title'))
 }
 
 const toggleTeleprompter = () => {
@@ -381,7 +393,7 @@ const playIntro = () => {
   
   // 检查浏览器是否支持语音合成
   if (!window.speechSynthesis) {
-    showErrorMessage('您的浏览器不支持语音合成功能', '提示')
+    showErrorMessage(t('alerts.browserNoSpeechSynthesis'), t('alerts.title'))
     return
   }
   
@@ -408,13 +420,13 @@ const playIntro = () => {
     utterance.onerror = (event) => {
       console.error('语音合成错误:', event)
       isPlaying.value = false
-      showErrorMessage('语音合成失败，请重试', '失败')
+      showErrorMessage(t('alerts.speechSynthesisFailed'), t('alerts.title'))
     }
     
   } catch (error) {
     console.error('播放自我介绍失败:', error)
     isPlaying.value = false
-    showErrorMessage('播放失败，请重试', '失败')
+    showErrorMessage(t('alerts.playFailed'), t('alerts.title'))
   }
 }
 

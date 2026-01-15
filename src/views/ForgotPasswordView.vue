@@ -1,22 +1,23 @@
 <template>
   <div class="forgot-password-container">
     <div class="forgot-password-card">
-      <h1 class="forgot-password-title">Offer贝，面试必备</h1>
-      <p class="forgot-password-subtitle">重置您的密码</p>
-      <p class="forgot-password-description">请输入您的注册邮箱，我们将向您发送密码重置链接</p>
+      <h1 class="forgot-password-title">{{ t('auth.forgot.title') }}</h1>
+      <p class="forgot-password-subtitle">{{ t('auth.forgot.subtitle') }}</p>
+      <p class="forgot-password-description">{{ t('auth.forgot.desc') }}</p>
       
-      <div class="forgot-password-form">
+      <div class="forgot-password-form" v-if="!emailSent">
         <!-- 邮箱输入框 -->
         <div class="form-group">
-          <label for="email" class="form-label">邮箱</label>
+          <label for="email" class="form-label">{{ t('auth.login.emailLabel') }}</label>
           <input 
             type="email" 
             id="email" 
             v-model="email" 
             class="form-input" 
-            placeholder="请输入您的邮箱" 
+            :placeholder="t('auth.login.emailPlaceholder')" 
             required
             @input="validateEmail"
+            @keyup.enter="handleSendResetLink"
           />
           <div v-if="emailError" class="error-message">{{ emailError }}</div>
         </div>
@@ -28,13 +29,20 @@
           :disabled="isLoading || emailError || !email.trim()"
         >
           <span v-if="isLoading" class="loading-spinner"></span>
-          {{ isLoading ? '发送中...' : '发送重置链接' }}
+          {{ isLoading ? t('auth.forgot.sending') : t('auth.forgot.sendBtn') }}
         </button>
-        
-        <!-- 返回登录链接 -->
-        <div class="forgot-password-footer">
-          <p>想起密码了？<button class="login-link" @click="handleLogin">返回登录</button></p>
-        </div>
+      </div>
+      
+      <!-- 发送成功提示 -->
+      <div class="success-message" v-else>
+        <div class="success-icon">✓</div>
+        <p>{{ t('auth.forgot.success') }}</p>
+        <p class="email-text">{{ email }}</p>
+      </div>
+      
+      <!-- 返回登录链接 -->
+      <div class="forgot-password-footer">
+        <p>{{ t('auth.forgot.remembered') }}<button class="login-link" @click="handleLogin">{{ t('auth.forgot.loginLink') }}</button></p>
       </div>
     </div>
     
@@ -51,18 +59,21 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import apiClient from '@/utils/api.js'
 import ErrorMessage from '@/components/ErrorMessage.vue'
 
 const router = useRouter()
+const { t } = useI18n()
 const email = ref('')
 const isLoading = ref(false)
 const emailError = ref('')
+const emailSent = ref(false)
 
 // 错误提示相关
 const showError = ref(false)
 const errorMessage = ref('')
-const errorTitle = ref('提示')
+const errorTitle = ref(t('auth.login.error.failed') || '提示')
 // 错误提示关闭后的回调函数
 const errorCloseCallback = ref(null)
 
@@ -70,10 +81,10 @@ const errorCloseCallback = ref(null)
 const validateEmail = () => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!email.value.trim()) {
-    emailError.value = '请输入邮箱'
+    emailError.value = t('auth.register.error.emailRequired')
     return false
   } else if (!emailRegex.test(email.value)) {
-    emailError.value = '请输入有效的邮箱格式'
+    emailError.value = t('auth.register.error.emailInvalid')
     return false
   } else {
     emailError.value = ''
@@ -112,16 +123,15 @@ const handleSendResetLink = async () => {
     // 调用后端API发送重置链接
     await apiClient.post('/auth/request-reset-password', { email: email.value })
     
-    // 发送成功，显示提示信息，用户点击确定后跳转到登录页面
-    showErrorMessage('密码重置链接已发送，请查收邮件', '发送成功', () => {
-      router.push('/login')
-    })
+    // 发送成功，显示成功状态
+    emailSent.value = true
+    
   } catch (error) {
     console.error('发送重置链接失败:', error)
     if (error.response?.data?.error) {
       emailError.value = error.response.data.error
     } else {
-      showErrorMessage('发送重置链接失败，请重试', '发送失败')
+      showErrorMessage(t('auth.forgot.error.invalidLink'), t('auth.login.error.failed'))
     }
   } finally {
     isLoading.value = false
@@ -266,6 +276,35 @@ const handleLogin = () => {
 .login-link:hover {
   color: #5a6fd8;
   text-decoration: underline;
+}
+
+/* Success Message Styles */
+.success-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.success-icon {
+  width: 60px;
+  height: 60px;
+  background-color: #2ecc71;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 30px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+}
+
+.email-text {
+  font-weight: 600;
+  color: #667eea;
+  margin-top: 8px;
 }
 
 /* 加载动画 */

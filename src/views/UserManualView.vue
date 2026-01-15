@@ -1,46 +1,46 @@
 <template>
   <div class="manual-container">
     <div class="manual-header">
-      <h1>Offer贝 使用手册</h1>
-      <p class="subtitle">您的全流程AI面试助手使用指南</p>
+      <h1>{{ t('manual.title') }}</h1>
+      <p class="subtitle">{{ t('manual.subtitle') }}</p>
     </div>
 
     <div class="manual-content">
       <nav class="manual-nav">
         <ul>
-          <li><a href="#resume" :class="{ active: activeSection === 'resume' }" @click.prevent="scrollTo('resume')">简历优化</a></li>
-          <li><a href="#intro" :class="{ active: activeSection === 'intro' }" @click.prevent="scrollTo('intro')">自我介绍</a></li>
-          <li><a href="#questions" :class="{ active: activeSection === 'questions' }" @click.prevent="scrollTo('questions')">智能题库</a></li>
-          <li><a href="#mock" :class="{ active: activeSection === 'mock' }" @click.prevent="scrollTo('mock')">模拟面试</a></li>
-          <li><a href="#strategy" :class="{ active: activeSection === 'strategy' }" @click.prevent="scrollTo('strategy')">面试策略</a></li>
+          <li><a href="#resume" :class="{ active: activeSection === 'resume' }" @click.prevent="scrollTo('resume')">{{ t('manual.nav.resume') }}</a></li>
+          <li><a href="#intro" :class="{ active: activeSection === 'intro' }" @click.prevent="scrollTo('intro')">{{ t('manual.nav.intro') }}</a></li>
+          <li><a href="#questions" :class="{ active: activeSection === 'questions' }" @click.prevent="scrollTo('questions')">{{ t('manual.nav.questions') }}</a></li>
+          <li><a href="#mock" :class="{ active: activeSection === 'mock' }" @click.prevent="scrollTo('mock')">{{ t('manual.nav.mock') }}</a></li>
+          <li><a href="#strategy" :class="{ active: activeSection === 'strategy' }" @click.prevent="scrollTo('strategy')">{{ t('manual.nav.strategy') }}</a></li>
         </ul>
       </nav>
 
       <div class="manual-sections">
         <section id="resume" class="manual-section">
-          <h2>1. 简历解析与智能优化</h2>
+          <h2>{{ t('manual.sections.resume.title') }}</h2>
           <div class="section-content">
-            <p>Offer贝的简历优化功能基于深度学习模型，能够自动识别您的简历结构并提供专业建议。</p>
+            <p>{{ t('manual.sections.resume.desc') }}</p>
             <div class="step-list">
               <div class="step-item">
                 <span class="step-num">01</span>
                 <div class="step-text">
-                  <h4>上传简历</h4>
-                  <p>点击导航栏的"简历优化"，支持PDF格式的简历文件上传。系统会自动解析您的个人信息、教育背景和工作经历。</p>
+                  <h4>{{ t('manual.sections.resume.steps.upload.title') }}</h4>
+                  <p>{{ t('manual.sections.resume.steps.upload.desc') }}</p>
                 </div>
               </div>
               <div class="step-item">
                 <span class="step-num">02</span>
                 <div class="step-text">
-                  <h4>AI 诊断</h4>
-                  <p>系统会从"完整性"、"匹配度"、"竞争力"三个维度对简历进行打分，并指出具体的问题点。</p>
+                  <h4>{{ t('manual.sections.resume.steps.diagnosis.title') }}</h4>
+                  <p>{{ t('manual.sections.resume.steps.diagnosis.desc') }}</p>
                 </div>
               </div>
               <div class="step-item">
                 <span class="step-num">03</span>
                 <div class="step-text">
-                  <h4>一键优化</h4>
-                  <p>使用 STAR 法则（情境、任务、行动、结果）重写您的项目经历，自动注入行业高频关键词，显著提升简历含金量。</p>
+                  <h4>{{ t('manual.sections.resume.steps.optimize.title') }}</h4>
+                  <p>{{ t('manual.sections.resume.steps.optimize.desc') }}</p>
                 </div>
               </div>
             </div>
@@ -48,56 +48,56 @@
         </section>
 
         <section id="intro" class="manual-section">
-          <h2>2. 定制化自我介绍</h2>
+          <h2>{{ t('manual.sections.intro.title') }}</h2>
           <div class="section-content">
-            <p>告别千篇一律的开场白，根据您的简历和目标岗位生成个性化自我介绍。</p>
+            <p>{{ t('manual.sections.intro.desc') }}</p>
             <ul class="feature-list">
-              <li><strong>多版本生成</strong>：自动生成 30秒（电梯演讲）、3分钟（标准面试）、5分钟（详细介绍）三个版本。</li>
-              <li><strong>风格调整</strong>：支持"稳重专业"、"热情活泼"、"创意新颖"等多种风格切换。</li>
-              <li><strong>提词器模式</strong>：生成的自我介绍可直接进入提词器模式，支持调节滚动速度和字体大小，方便跟读练习。</li>
+              <li><strong>{{ t('manual.sections.intro.features.multiVersion').split('：')[0] || t('manual.sections.intro.features.multiVersion').split(':')[0] }}</strong>: {{ t('manual.sections.intro.features.multiVersion').split('：')[1] || t('manual.sections.intro.features.multiVersion').split(':')[1] }}</li>
+              <li><strong>{{ t('manual.sections.intro.features.style').split('：')[0] || t('manual.sections.intro.features.style').split(':')[0] }}</strong>: {{ t('manual.sections.intro.features.style').split('：')[1] || t('manual.sections.intro.features.style').split(':')[1] }}</li>
+              <li><strong>{{ t('manual.sections.intro.features.teleprompter').split('：')[0] || t('manual.sections.intro.features.teleprompter').split(':')[0] }}</strong>: {{ t('manual.sections.intro.features.teleprompter').split('：')[1] || t('manual.sections.intro.features.teleprompter').split(':')[1] }}</li>
             </ul>
           </div>
         </section>
 
         <section id="questions" class="manual-section">
-          <h2>3. 智能题库与定向突击</h2>
+          <h2>{{ t('manual.sections.questions.title') }}</h2>
           <div class="section-content">
-            <p>不再盲目刷题，Offer贝为您提供针对性极强的面试题库。</p>
-            <p>进入"智能题库"页面，系统会根据您的简历技能点（如 Java、Python、产品设计等）推荐高频面试题。</p>
+            <p>{{ t('manual.sections.questions.desc') }}</p>
+            <p>{{ t('manual.sections.questions.desc2') }}</p>
             <div class="question-types">
-              <div class="type-badge">八股文</div>
-              <div class="type-badge">场景题</div>
-              <div class="type-badge">算法题</div>
-              <div class="type-badge">行为面试(BQ)</div>
+              <div class="type-badge">{{ t('manual.sections.questions.types.bagu') }}</div>
+              <div class="type-badge">{{ t('manual.sections.questions.types.scenario') }}</div>
+              <div class="type-badge">{{ t('manual.sections.questions.types.algo') }}</div>
+              <div class="type-badge">{{ t('manual.sections.questions.types.bq') }}</div>
             </div>
-            <p class="tip">点击题目即可查看参考答案和解析。</p>
+            <p class="tip">{{ t('manual.sections.questions.tip') }}</p>
           </div>
         </section>
 
         <section id="mock" class="manual-section">
-          <h2>4. 全真模拟真人面试</h2>
+          <h2>{{ t('manual.sections.mock.title') }}</h2>
           <div class="section-content">
-            <p>沉浸式模拟真实面试场景，提升临场应变能力。</p>
+            <p>{{ t('manual.sections.mock.desc') }}</p>
             <div class="step-list">
               <div class="step-item">
                 <span class="step-num">01</span>
                 <div class="step-text">
-                  <h4>配置面试官</h4>
-                  <p>选择面试官风格（严厉、温和、专业）和面试类型（技术面、HR面、综合面）。</p>
+                  <h4>{{ t('manual.sections.mock.steps.config.title') }}</h4>
+                  <p>{{ t('manual.sections.mock.steps.config.desc') }}</p>
                 </div>
               </div>
               <div class="step-item">
                 <span class="step-num">02</span>
                 <div class="step-text">
-                  <h4>实时互动</h4>
-                  <p>支持语音实时对话，AI 面试官会根据您的回答进行追问。也支持文字模式输入。</p>
+                  <h4>{{ t('manual.sections.mock.steps.interact.title') }}</h4>
+                  <p>{{ t('manual.sections.mock.steps.interact.desc') }}</p>
                 </div>
               </div>
               <div class="step-item">
                 <span class="step-num">03</span>
                 <div class="step-text">
-                  <h4>复盘报告</h4>
-                  <p>面试结束后，生成详细的评估报告，包含维度评分（逻辑性、沟通力、专业度等）和改进建议。</p>
+                  <h4>{{ t('manual.sections.mock.steps.report.title') }}</h4>
+                  <p>{{ t('manual.sections.mock.steps.report.desc') }}</p>
                 </div>
               </div>
             </div>
@@ -105,14 +105,14 @@
         </section>
 
         <section id="strategy" class="manual-section">
-          <h2>5. 面试策略锦囊</h2>
+          <h2>{{ t('manual.sections.strategy.title') }}</h2>
           <div class="section-content">
-            <p>掌握面试背后的心理博弈，不仅要"答得对"，更要"答得好"。</p>
-            <p>在"面试策略"板块，您可以学习：</p>
+            <p>{{ t('manual.sections.strategy.desc') }}</p>
+            <p>{{ t('manual.sections.strategy.desc2') }}</p>
             <ul>
-              <li><strong>谈薪技巧</strong>：如何委婉地争取更高薪资。</li>
-              <li><strong>反问环节</strong>：问什么问题能给面试官留下好印象。</li>
-              <li><strong>回答陷阱</strong>：如何回答"你的缺点是什么"等送命题。</li>
+              <li><strong>{{ t('manual.sections.strategy.items.salary').split('：')[0] || t('manual.sections.strategy.items.salary').split(':')[0] }}</strong>: {{ t('manual.sections.strategy.items.salary').split('：')[1] || t('manual.sections.strategy.items.salary').split(':')[1] }}</li>
+              <li><strong>{{ t('manual.sections.strategy.items.reverse').split('：')[0] || t('manual.sections.strategy.items.reverse').split(':')[0] }}</strong>: {{ t('manual.sections.strategy.items.reverse').split('：')[1] || t('manual.sections.strategy.items.reverse').split(':')[1] }}</li>
+              <li><strong>{{ t('manual.sections.strategy.items.trap').split('：')[0] || t('manual.sections.strategy.items.trap').split(':')[0] }}</strong>: {{ t('manual.sections.strategy.items.trap').split('：')[1] || t('manual.sections.strategy.items.trap').split(':')[1] }}</li>
             </ul>
           </div>
         </section>
@@ -123,7 +123,9 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const activeSection = ref('resume')
 
 const scrollTo = (id) => {

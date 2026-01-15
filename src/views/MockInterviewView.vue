@@ -1,23 +1,23 @@
 <template>
   <div class="mock-interview-container">
-    <h1>全真模拟真人面试</h1>
+    <h1>{{ $t('pages.mockInterview.title') }}</h1>
     
     <!-- API调用遮盖层 -->
     <div v-if="isLoading" class="loading-overlay">
       <div class="loading-content">
         <div class="loading-spinner"></div>
         <h3>{{ loadingMessage }}</h3>
-        <p>请稍候，系统正在处理您的请求</p>
+        <p>{{ t('loading.processing') }}</p>
       </div>
     </div>
     
     <div v-if="!isInterviewStarted" class="interview-setup-section">
       <div class="setup-card">
-        <h2>面试设置</h2>
+        <h2>{{ $t('pages.mockInterview.setup.title') }}</h2>
         
         <div class="setup-options">
           <div class="option-group">
-            <label>面试官风格</label>
+            <label>{{ $t('pages.mockInterview.setup.styleLabel') }}</label>
             <div class="interviewer-styles">
               <div 
                 v-for="style in interviewerStyles" 
@@ -36,7 +36,7 @@
 
 
           <div class="option-group">
-            <label>面试时长</label>
+            <label>{{ $t('pages.mockInterview.setup.durationLabel') }}</label>
             <div class="duration-options">
               <button 
                 v-for="duration in durations" 
@@ -44,14 +44,14 @@
                 :class="['duration-btn', { active: selectedDuration === duration }]" 
                 @click="selectedDuration = duration"
               >
-                {{ duration }}分钟
+                {{ duration }}{{ $t('pages.mockInterview.setup.minutes') }}
               </button>
             </div>
           </div>
 
           <button class="start-btn" @click="startInterview">
             <span class="btn-icon">🚀</span>
-            开始模拟面试
+            {{ $t('pages.mockInterview.start') }}
           </button>
         </div>
       </div>
@@ -61,16 +61,16 @@
       <div class="interview-header">
         <div class="interview-info">
           <span class="style-badge">{{ selectedStyle }}</span>
-          <span class="duration-badge">{{ selectedDuration }}分钟</span>
+          <span class="duration-badge">{{ selectedDuration }}{{ $t('pages.mockInterview.setup.minutes') }}</span>
         </div>
         <div class="interview-actions">
           <button class="action-btn" @click="pauseInterview">
             <span class="action-icon">{{ isPaused ? '▶️' : '⏸️' }}</span>
-            {{ isPaused ? '继续' : '暂停' }}
+            {{ isPaused ? $t('pages.mockInterview.resume') : $t('pages.mockInterview.pause') }}
           </button>
           <button class="action-btn danger" @click="endInterview">
             <span class="action-icon">⏹️</span>
-            结束面试
+            {{ $t('pages.mockInterview.end') }}
           </button>
         </div>
       </div>
@@ -88,7 +88,7 @@
                 {{ message.sender === 'user' ? '👤' : '🤖' }}
               </div>
               <div class="message-content">
-                <div class="message-sender">{{ message.sender === 'user' ? '我' : '面试官' }}</div>
+                <div class="message-sender">{{ message.sender === 'user' ? $t('pages.mockInterview.chat.me') : $t('pages.mockInterview.chat.interviewer') }}</div>
                 <div class="message-text">{{ message.text }}</div>
                 <div class="message-time">{{ message.time }}</div>
               </div>
@@ -105,26 +105,26 @@
                   recordingStatus === 'starting' ? '📤' : '🎤' 
                 }}</span>
                 <span class="status-text">{{ 
-                  recordingStatus === 'recording' ? '录音中...' : 
-                  recordingStatus === 'processing' ? '处理中...' : 
-                  recordingStatus === 'completed' ? '已完成' : 
-                  recordingStatus === 'starting' ? '准备中...' : '点击开始录音' 
+                  recordingStatus === 'recording' ? $t('pages.mockInterview.voice.recording') :
+                  recordingStatus === 'processing' ? $t('pages.mockInterview.voice.processing') :
+                  recordingStatus === 'completed' ? $t('pages.mockInterview.voice.completed') :
+                  recordingStatus === 'starting' ? $t('pages.mockInterview.voice.preparing') : $t('pages.mockInterview.voice.clickToStart') 
                 }}</span>
               </div>
               <textarea 
                 v-model="inputMessage" 
-                placeholder="请输入您的回答..."
+                :placeholder="$t('pages.mockInterview.answer.placeholder')"
                 rows="3"
                 @keydown.enter.prevent="sendMessage"
               ></textarea>
               <div class="input-actions">
                 <button class="voice-btn" :class="recordingStatus" @click="toggleRecording">
                   <span class="voice-icon">{{ isRecording ? '🔴' : '🎤' }}</span>
-                  {{ isRecording ? '停止录音' : '开始录音' }}
+                  {{ isRecording ? $t('pages.mockInterview.voice.stopRecording') : $t('pages.mockInterview.voice.startRecording') }}
                 </button>
                 <button class="send-btn" @click="sendMessage">
                   <span class="send-icon">📤</span>
-                  发送
+                  {{ $t('pages.mockInterview.chat.send') }}
                 </button>
               </div>
             </div>
@@ -133,18 +133,18 @@
 
         <div class="interview-sidebar">
           <div class="sidebar-section">
-            <h3>面试进度</h3>
+            <h3>{{ $t('pages.mockInterview.progress.title') }}</h3>
             <div class="progress-bar">
               <div class="progress-fill" :style="{ width: progress + '%' }"></div>
             </div>
             <div class="progress-info">
               <span>{{ currentQuestion }} / {{ totalQuestions }}</span>
-              <span>剩余时间: {{ Math.max(0, remainingTime).toFixed(1) }}分钟</span>
+              <span>{{ $t('pages.mockInterview.progress.timeRemaining') }}: {{ Math.max(0, remainingTime).toFixed(1) }}{{ $t('pages.mockInterview.setup.minutes') }}</span>
             </div>
           </div>
 
           <div class="sidebar-section">
-            <h3>问题列表</h3>
+            <h3>{{ $t('pages.mockInterview.progress.questions') }}</h3>
             <div class="question-list">
               <div 
                 v-for="(q, index) in askedQuestions" 
@@ -158,7 +158,7 @@
           </div>
 
           <div class="sidebar-section">
-            <h3>实时提示</h3>
+            <h3>{{ $t('pages.mockInterview.progress.tips') }}</h3>
             <div class="tips-list">
               <div class="tip-item" v-for="(tip, index) in realTimeTips" :key="index">
                 <span class="tip-icon">💡</span>
@@ -172,34 +172,34 @@
 
     <div v-if="showReport" class="report-section">
       <div class="report-card" ref="reportCard">
-        <h2>面试复盘报告</h2>
+        <h2>{{ $t('pages.mockInterview.report.title') }}</h2>
         
         <div class="report-header">
           <div class="report-info">
-            <span class="report-badge">面试完成</span>
+            <span class="report-badge">{{ $t('pages.mockInterview.report.completed') }}</span>
             <span class="report-date">{{ new Date().toLocaleString() }}</span>
           </div>
         </div>
 
         <div class="report-content">
           <div class="radar-chart-section">
-            <h3>多维能力评估</h3>
+            <h3>{{ $t('pages.mockInterview.report.assessment') }}</h3>
             <div class="radar-chart-placeholder">
               <div class="radar-chart">
                 <div class="radar-axis">
-                  <div class="radar-label">专业能力</div>
+                  <div class="radar-label">{{ $t('pages.mockInterview.report.dimensions.professional') }}</div>
                   <div class="radar-value">{{ reportData.professionalScore }}</div>
                 </div>
                 <div class="radar-axis">
-                  <div class="radar-label">逻辑表达</div>
+                  <div class="radar-label">{{ $t('pages.mockInterview.report.dimensions.logic') }}</div>
                   <div class="radar-value">{{ reportData.logicScore }}</div>
                 </div>
                 <div class="radar-axis">
-                  <div class="radar-label">自信程度</div>
+                  <div class="radar-label">{{ $t('pages.mockInterview.report.dimensions.confidence') }}</div>
                   <div class="radar-value">{{ reportData.confidenceScore }}</div>
                 </div>
                 <div class="radar-axis">
-                  <div class="radar-label">岗位匹配度</div>
+                  <div class="radar-label">{{ $t('pages.mockInterview.report.dimensions.match') }}</div>
                   <div class="radar-value">{{ reportData.matchScore }}</div>
                 </div>
               </div>
@@ -207,7 +207,7 @@
           </div>
 
           <div class="detailed-analysis-section">
-            <h3>逐题诊断</h3>
+            <h3>{{ $t('pages.mockInterview.report.analysis') }}</h3>
             <div class="analysis-list">
               <div 
                 v-for="(analysis, index) in reportData.questionAnalysis" 
@@ -215,23 +215,23 @@
                 class="analysis-item"
               >
                 <div class="analysis-question">
-                  <strong>问题 {{ index + 1 }}:</strong> {{ analysis.question }}
+                  <strong>{{ $t('pages.mockInterview.report.questionLabel') }} {{ index + 1 }}:</strong> {{ analysis.question }}
                 </div>
                 <div class="analysis-answer">
-                  <strong>您的回答:</strong> {{ analysis.answer }}
+                  <strong>{{ $t('pages.mockInterview.report.yourAnswer') }}:</strong> {{ analysis.answer }}
                 </div>
                 <div class="analysis-feedback">
-                  <strong>反馈:</strong> {{ analysis.feedback }}
+                  <strong>{{ $t('pages.mockInterview.report.feedbackLabel') }}:</strong> {{ analysis.feedback }}
                 </div>
                 <div class="analysis-suggestion">
-                  <strong>建议:</strong> {{ analysis.suggestion }}
+                  <strong>{{ $t('pages.mockInterview.report.suggestionLabel') }}:</strong> {{ analysis.suggestion }}
                 </div>
               </div>
             </div>
           </div>
 
           <div class="optimization-section">
-            <h3>优化建议</h3>
+            <h3>{{ $t('pages.mockInterview.report.optimization') }}</h3>
             <div class="suggestions-list" ref="suggestionsList">
               <div class="suggestion-item" v-for="(suggestion, index) in reportData.optimizationSuggestions" :key="index">
                 <span class="suggestion-icon">📋</span>
@@ -244,15 +244,15 @@
         <div class="report-footer">
           <button class="action-btn" @click="saveReport">
             <span class="action-icon">💾</span>
-            保存报告
+            {{ $t('pages.mockInterview.report.saveReport') }}
           </button>
           <button class="action-btn" @click="newInterview">
             <span class="action-icon">🔄</span>
-            重新开始
+            {{ $t('pages.mockInterview.report.restart') }}
           </button>
           <router-link to="/" class="action-btn">
             <span class="action-icon">🏠</span>
-            返回首页
+            {{ $t('pages.mockInterview.report.backHome') }}
           </router-link>
         </div>
       </div>
@@ -269,8 +269,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import apiClient from '@/utils/api.js'
 import ErrorMessage from '@/components/ErrorMessage.vue'
 import jsPDF from 'jspdf'
@@ -278,6 +279,7 @@ import html2canvas from 'html2canvas'
 import { trackEvent } from '@/utils/analytics'
 
 const router = useRouter()
+const { t, locale } = useI18n()
 
 // 错误提示相关
 const showError = ref(false)
@@ -287,7 +289,7 @@ const errorTitle = ref('提示')
 const errorCloseCallback = ref(null)
 
 // 显示错误信息
-const showErrorMessage = (message, title = '提示', callback = null) => {
+const showErrorMessage = (message, title = t('alerts.title'), callback = null) => {
   errorMessage.value = message
   errorTitle.value = title
   errorCloseCallback.value = callback
@@ -298,7 +300,7 @@ const showErrorMessage = (message, title = '提示', callback = null) => {
 const closeError = () => {
   showError.value = false
   errorMessage.value = ''
-  errorTitle.value = '提示'
+  errorTitle.value = t('alerts.title')
   // 执行回调函数
   if (errorCloseCallback.value) {
     const callback = errorCloseCallback.value
@@ -311,7 +313,7 @@ const isInterviewStarted = ref(false)
 const isPaused = ref(false)
 const isRecording = ref(false)
 const showReport = ref(false)
-const selectedStyle = ref('温柔HR')
+const selectedStyle = ref(t('pages.mockInterview.styles.gentle.name'))
 const selectedDuration = ref(15)
 const inputMessage = ref('')
 const messages = ref([])
@@ -325,16 +327,16 @@ const chatMessages = ref(null)
 const reportCard = ref(null)
 const suggestionsList = ref(null)
 const isLoading = ref(false)
-const loadingMessage = ref('正在处理请求...')
+const loadingMessage = ref(t('loading.processing'))
 const interviewId = ref(null)
 const isEnding = ref(false)
 let timer = null
 
-const interviewerStyles = [
-  { name: '温柔HR', icon: '😊', description: '友好亲切，适合初次面试练习' },
-  { name: '严厉技术总监', icon: '😐', description: '专业严谨，适合技术岗位准备' },
-  { name: '综合面试官', icon: '🤔', description: '平衡风格，适合综合练习' }
-]
+const interviewerStyles = computed(() => [
+  { name: t('pages.mockInterview.styles.gentle.name'), icon: '😊', description: t('pages.mockInterview.styles.gentle.desc') },
+  { name: t('pages.mockInterview.styles.strict.name'), icon: '😐', description: t('pages.mockInterview.styles.strict.desc') },
+  { name: t('pages.mockInterview.styles.balanced.name'), icon: '🤔', description: t('pages.mockInterview.styles.balanced.desc') }
+])
 
 const durations = [15, 30, 45, 60]
 
@@ -370,6 +372,25 @@ const reportData = ref({
 // 历史面试记录
 const interviewHistory = ref([])
 
+// 规范化面试官风格名称（用于跨语言比较）
+const normalizeStyleName = (style) => {
+  const styleMap = {
+    '温柔HR': '温柔HR',
+    '严厉技术总监': '严厉技术总监',
+    '综合面试官': '综合面试官',
+    'Gentle HR': '温柔HR',
+    'Strict Technical Director': '严厉技术总监',
+    'Balanced Interviewer': '综合面试官'
+  }
+  return styleMap[style] || style
+}
+
+// 监听语言变化，重置选中的风格和时长
+watch(locale, () => {
+  selectedStyle.value = t('pages.mockInterview.styles.gentle.name')
+  selectedDuration.value = 15
+})
+
 const startInterview = async () => {
   // 直接开始面试，不再根据模式检测设备
   await startInterviewProcess()
@@ -378,7 +399,7 @@ const startInterview = async () => {
 // 实际开始面试的处理函数
 const startInterviewProcess = async () => {
   isLoading.value = true
-  loadingMessage.value = '正在准备面试...'
+  loadingMessage.value = t('loading.preparingInterview')
   showReport.value = false // 开始面试时隐藏报告
   
   // 从localStorage获取userId
@@ -416,15 +437,15 @@ const startInterviewProcess = async () => {
     console.error('开始面试失败:', error)
     if (error.isUnauthorized) {
       // 401错误，显示请先登录提示，点击确定后跳转到登录页
-      showErrorMessage('请先登录', '提示', () => {
+      showErrorMessage(t('alerts.loginRequired'), t('alerts.title'), () => {
         router.push('/login')
       })
     } else if (error.response && error.response.data.error === 'User not found') {
-      showErrorMessage('请先上传简历进行优化，然后再开始模拟面试', '提示', () => {
+      showErrorMessage(t('alerts.uploadResumeFirst'), t('alerts.title'), () => {
         router.push('/resume')
       })
     } else {
-      showErrorMessage('开始面试失败，请重试', '失败')
+      showErrorMessage(t('alerts.startInterviewFailed'), t('alerts.title'))
     }
   } finally {
     isLoading.value = false
@@ -446,7 +467,7 @@ const endInterview = () => {
   
   isEnding.value = true
   isLoading.value = true
-  loadingMessage.value = '正在生成面试报告...'
+  loadingMessage.value = t('loading.generatingReport')
   
   // 从localStorage获取userId
   const userId = localStorage.getItem('userId') || ''
@@ -475,11 +496,11 @@ const endInterview = () => {
     console.error('结束面试失败:', error)
     if (error.isUnauthorized) {
       // 401错误，显示请先登录提示，点击确定后跳转到登录页
-      showErrorMessage('请先登录', '提示', () => {
+      showErrorMessage(t('alerts.loginRequired'), t('alerts.title'), () => {
         router.push('/login')
       })
     } else {
-      showErrorMessage('结束面试失败，请重试', '失败')
+      showErrorMessage(t('alerts.endInterviewFailed'), t('alerts.title'))
     }
   })
   .finally(() => {
@@ -502,7 +523,7 @@ const sendMessage = () => {
   if (!inputMessage.value.trim() || !interviewId.value) return
   
   isLoading.value = true
-  loadingMessage.value = '正在分析您的回答...'
+  loadingMessage.value = t('loading.analyzingAnswer')
   const userAnswer = inputMessage.value
   
   // 添加用户消息
@@ -543,11 +564,11 @@ const sendMessage = () => {
     console.error('回答问题失败:', error)
     if (error.isUnauthorized) {
       // 401错误，显示请先登录提示，点击确定后跳转到登录页
-      showErrorMessage('请先登录', '提示', () => {
+      showErrorMessage(t('alerts.loginRequired'), t('alerts.title'), () => {
         router.push('/login')
       })
     } else {
-      showErrorMessage('回答问题失败，请重试', '失败')
+      showErrorMessage(t('alerts.answerFailed'), t('alerts.title'))
     }
   })
   .finally(() => {
@@ -575,7 +596,7 @@ const initSpeechRecognition = () => {
   if (!navigator.mediaDevices || !window.MediaRecorder) {
     isSpeechSupported.value = false
     console.error('浏览器不支持MediaRecorder API')
-    realTimeTips.value.push('您的浏览器不支持MediaRecorder功能，请使用Chrome或Edge等现代浏览器')
+    realTimeTips.value.push(t('alerts.browserNoMediaRecorder'))
     return
   }
   
@@ -771,7 +792,7 @@ const sendAudioChunk = async (audioBlob, chunkIndex) => {
       retries++
       if (retries >= maxRetries) {
         console.error(`音频片段发送失败，已重试${maxRetries}次:`, error)
-        realTimeTips.value.push('网络连接暂时不稳定，语音识别正在尝试恢复...')
+        realTimeTips.value.push(t('alerts.networkUnstable'))
         throw error
       }
       
@@ -1273,8 +1294,8 @@ const checkAndLoadMatchingReport = () => {
   const matchingHistory = interviewHistory.value[0]
   console.log('后端返回的历史记录:', matchingHistory)
   
-  // 检查返回的记录是否与当前选择的设置匹配
-  if (matchingHistory.style === selectedStyle.value && 
+  // 检查返回的记录是否与当前选择的设置匹配（使用规范化后的名称进行比较）
+  if (normalizeStyleName(matchingHistory.style) === normalizeStyleName(selectedStyle.value) && 
       Math.abs(matchingHistory.duration - selectedDuration.value) <= 5) {
     
     if (matchingHistory.reportData) {

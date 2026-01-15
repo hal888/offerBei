@@ -1,8 +1,8 @@
 <template>
   <div class="faq-container">
     <div class="faq-header">
-      <h1>常见问题解答</h1>
-      <p class="subtitle">无论是求职疑惑还是产品使用，这里都有您想要的答案</p>
+      <h1>{{ t('faq.title') }}</h1>
+      <p class="subtitle">{{ t('faq.subtitle') }}</p>
     </div>
 
     <div class="faq-categories">
@@ -39,7 +39,7 @@
             <div class="faq-answer" v-show="isOpen(group.id, qIndex)">
               <div class="answer-content">
                 <p v-html="item.a"></p>
-                <router-link v-if="item.link" :to="item.link" class="faq-link">立即体验 &rarr;</router-link>
+                <router-link v-if="item.link" :to="item.link" class="faq-link">{{ t('faq.tryNow') }} &rarr;</router-link>
               </div>
             </div>
           </div>
@@ -48,105 +48,106 @@
     </div>
     
     <div class="cta-section">
-      <h2>准备好开始您的面试之旅了吗？</h2>
-      <p>立即注册 Offer贝，解锁您的专属 AI 面试教练</p>
-      <router-link to="/register" class="cta-btn">免费注册，开启 Offer 之路</router-link>
+      <h2>{{ t('faq.cta.title') }}</h2>
+      <p>{{ t('faq.cta.subtitle') }}</p>
+      <router-link to="/register" class="cta-btn">{{ t('faq.cta.btn') }}</router-link>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const activeCategory = ref('all')
 const openItems = ref({}) // key: groupId-questionIndex
 
-const categories = [
-  { id: 'all', name: '全部' },
-  { id: 'product', name: '关于 Offer贝' },
-  { id: 'guide', name: '实操指南' },
-  { id: 'scenario', name: '场景化需求' },
-  { id: 'comparison', name: '工具对比' }
-]
+const categories = computed(() => [
+  { id: 'all', name: t('faq.categories.all') },
+  { id: 'product', name: t('faq.categories.product') },
+  { id: 'guide', name: t('faq.categories.guide') },
+  { id: 'scenario', name: t('faq.categories.scenario') },
+  { id: 'comparison', name: t('faq.categories.comparison') }
+])
 
-const faqData = [
- 
+const faqData = computed(() => [
   {
     id: 'product',
-    name: '关于 Offer贝',
+    name: t('faq.groupTitles.product'),
     questions: [
       {
-        q: 'Offer贝 是什么？这个 AI 面试辅助工具怎么用？',
-        a: 'Offer贝是一款垂直于求职领域的全流程 AI 面试助手。它不同于通用的聊天机器人，而是专门针对面试场景进行了深度定制。您可以上传简历进行优化，生成个性化自我介绍，刷专项面试题，并进行语音互动的模拟面试。全程由 AI 驱动，随时随地可用。',
+        q: t('faq.questions.product.whatIs.q'),
+        a: t('faq.questions.product.whatIs.a'),
         link: '/manual'
       },
       {
-        q: 'Offer贝 需要注册吗？有哪些免费功能？',
-        a: 'Offer贝提供基础功能的<strong>永久免费</strong>使用权。注册后，您可以免费使用：<br>• 基础简历解析与诊断<br>• 生成标准版自我介绍<br>• 浏览大部分基础面试题<br>• 每日限次体验 AI 模拟面试<br>注册过程仅需手机号，简单快捷。',
+        q: t('faq.questions.product.pricing.q'),
+        a: t('faq.questions.product.pricing.a'),
         link: '/register'
       },
       {
-        q: '我的数据安全吗？AI 会泄露我的简历吗？',
-        a: '我们严格遵守隐私保护法规。您的简历仅用于 AI 分析和生成建议，绝不会用于任何商业用途或被公开。'
+        q: t('faq.questions.product.security.q'),
+        a: t('faq.questions.product.security.a')
       }
     ]
   },
   {
     id: 'guide',
-    name: '实操指南',
+    name: t('faq.groupTitles.guide'),
     questions: [
       {
-        q: '怎么用 AI 工具模拟技术面试的问答环节？',
-        a: '很简单：<br>1. 进入"模拟面试"页面。<br>2. 选择"技术面试"模式和您期望的难度。<br>3. 开启麦克风，AI 会根据您的简历抛出第一个问题。<br>4. 进行语音回答，AI 会实时转录并分析。<br>5. 结束后查看评分报告，查漏补缺。',
+        q: t('faq.questions.guide.mock.q'),
+        a: t('faq.questions.guide.mock.a'),
         link: '/manual#mock'
       },
       {
-        q: '如何利用 AI 优化我的面试作答思路？',
-        a: '推荐使用"智能题库"功能。对于每一个问题，Offer贝不仅提供标准答案，还提供<strong>"高分思路"</strong>。您可以先尝试自己回答，然后对比 AI 的解析，学习如何更有逻辑、更由浅入深地组织语言。'
+        q: t('faq.questions.guide.optimize.q'),
+        a: t('faq.questions.guide.optimize.a')
       }
     ]
   },
    {
     id: 'scenario',
-    name: '场景化需求',
+    name: t('faq.groupTitles.scenario'),
     questions: [
       {
-        q: '应届生/校招新人怎么用 AI 高效准备面试？',
-        a: '对于缺乏实战经验的应届生，<strong>Offer贝</strong>建议从两方面入手：<br>1. <strong>高频题库突击</strong>：利用"智能题库"功能，筛选"校招"和"基础"标签，快速掌握八股文。<br>2. <strong>全真模拟</strong>：使用"模拟面试"功能，选择温和风格的 AI 面试官进行多次练习，熟悉面试流程，消除紧张感。',
+        q: t('faq.questions.scenario.fresher.q'),
+        a: t('faq.questions.scenario.fresher.a'),
         link: '/mock-interview'
       },
       {
-        q: 'Python/Java/后端开发岗位，如何针对性练习编程题和技术问答？',
-        a: 'Offer贝针对技术岗特别优化了题库。您可以上传简历，系统会自动提取您的技术栈（如 Python, Spring Boot, Redis），并生成针对性的技术深挖问题。在模拟面试中，AI 会像真实技术面试官一样，针对您的回答追问底层原理和实现细节。',
+        q: t('faq.questions.scenario.tech.q'),
+        a: t('faq.questions.scenario.tech.a'),
         link: '/question-bank'
       },
       {
-        q: '面试中常见的行为问题（BQ），AI 工具能指导吗？',
-        a: '当然可以。行为面试是 Offer贝的强项之一。系统内置了大量宝洁八大问、STAR 法则相关场景题。AI 会评估您的回答是否逻辑清晰、案例是否具体，并根据 STAR 法则（情境、任务、行动、结果）给出具体的润色建议。'
+        q: t('faq.questions.scenario.bq.q'),
+        a: t('faq.questions.scenario.bq.a')
       }
     ]
   },
   {
     id: 'comparison',
-    name: '工具对比与选型',
+    name: t('faq.groupTitles.comparison'),
     questions: [
       {
-        q: 'Offer贝 和 ChatGPT、Deepseek、豆包等工具相比，有什么核心优势？',
-        a: '通用大模型（如 ChatGPT）虽然全能，但在面试场景下往往缺乏"深度"和"场景感"。<strong>Offer贝的核心优势在于：</strong><br>1. <strong>专业数据微调</strong>：我们使用了海量真实面经对模型进行微调，回答更符合 HR 和技术面试官的口味。<br>2. <strong>结构化流程</strong>：不仅是对话，更是涵盖简历-准备-实战-复盘的全流程闭环。<br>3. <strong>真实交互体验</strong>：提供语音模拟面试和提词器功能，这是纯文本工具无法比拟的。'
+        q: t('faq.questions.comparison.advantage.q'),
+        a: t('faq.questions.comparison.advantage.a')
       },
       {
-        q: '常用的 AI 面试模拟工具对比，Offer贝 适合技术岗吗？',
-        a: '非常适合。相比于市面上侧重于销售、客服类岗位的 AI 面试工具，Offer贝特别加强了对<strong>互联网技术岗</strong>（研发、算法、测试、产品）的支持。我们的题库覆盖了主流技术栈，AI 面试官能够理解复杂的代码逻辑和架构设计问题。'
+        q: t('faq.questions.comparison.techFit.q'),
+        a: t('faq.questions.comparison.techFit.a')
       }
     ]
   }
-]
+])
 
 const filteredGroups = computed(() => {
   if (activeCategory.value === 'all') {
-    return faqData
+    return faqData.value
   }
-  return faqData.filter(group => group.id === activeCategory.value)
+  return faqData.value.filter(group => group.id === activeCategory.value)
 })
 
 const toggle = (groupId, index) => {

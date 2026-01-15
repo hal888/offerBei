@@ -3,46 +3,51 @@
     <div class="footer-content">
       <div class="footer-column brand-column">
         <div class="footer-logo">
-          <img src="/logo.webp" alt="Offer贝" class="logo-img" />
-          <span class="logo-text">Offer贝-AI面试助手</span>
+          <img src="/logo.webp" :alt="t('nav.brand')" class="logo-img" />
+          <span class="logo-text">{{ t('nav.brand') }} - {{ t('footer.slogan') }}</span>
         </div>
-        <p class="footer-desc">专业AI面试工具，助力求职者轻松拿到心仪Offer。</p>
+        <p class="footer-desc">{{ t('footer.description') }}</p>
       </div>
 
       <div class="footer-column link-column">
-        <h3>产品</h3>
+        <h3>{{ t('footer.products') }}</h3>
         <ul>
-          <li><router-link to="/resume">简历优化</router-link></li>
-          <li><router-link to="/question-bank">智能题库</router-link></li>
-          <li><router-link to="/mock-interview">模拟面试</router-link></li>
+          <li><router-link to="/resume">{{ t('nav.resume') }}</router-link></li>
+          <li><router-link to="/question-bank">{{ t('nav.questionBank') }}</router-link></li>
+          <li><router-link to="/mock-interview">{{ t('nav.mockInterview') }}</router-link></li>
         </ul>
       </div>
 
       <div class="footer-column link-column">
-        <h3>资源</h3>
+        <h3>{{ t('footer.resources') }}</h3>
         <ul>
-          <li><router-link to="/manual">使用教程</router-link></li>
-          <li><router-link to="/faq">常见问题</router-link></li>
+          <li><router-link to="/manual">{{ t('nav.manual') }}</router-link></li>
+          <li><router-link to="/faq">{{ t('footer.faq') }}</router-link></li>
         </ul>
       </div>
 
       <div class="footer-column contact-column">
-        <h3>联系我们</h3>
+        <h3>{{ t('footer.contact') }}</h3>
         <div class="qr-codes">
           <div class="qr-item">
-            <img src="/studio_arcode.png" alt="微信客服" class="qr-img" />
-            <span>微信客服</span>
+            <img src="/studio_arcode.png" :alt="t('footer.wechat')" class="qr-img" />
+            <span>{{ t('footer.wechat') }}</span>
           </div>
         </div>
-        <p class="contact-tip">使用中遇到任何问题，请随时联系我们</p>
+        <p class="contact-tip">{{ t('footer.contactTip') }}</p>
       </div>
     </div>
 
     <div class="footer-bottom">
-      <p>&copy; 2026 Offer贝. 保留所有权利.</p>
+      <p>{{ t('footer.copyright') }}</p>
     </div>
   </footer>
 </template>
+
+<script setup>
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
+</script>
 
 <style scoped>
 .site-footer {

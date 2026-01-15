@@ -5,7 +5,7 @@
         <p class="error-message">{{ message }}</p>
       </div>
       <div class="error-footer">
-        <button class="error-button" @click="close">确定</button>
+        <button class="error-button" @click="close">{{ t('alerts.confirm') }}</button>
       </div>
     </div>
   </div>
@@ -13,6 +13,9 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // Props
 const props = defineProps({
@@ -26,7 +29,7 @@ const props = defineProps({
   },
   title: {
     type: String,
-    default: '提示'
+    default: '' // Default handled in template or logic, but here we can just leave empty and header logic (if any)
   }
 })
 

@@ -1,20 +1,20 @@
 <template>
   <div class="reset-container">
     <div class="reset-card">
-      <h1 class="reset-title">AI智能面试宝典</h1>
-      <p class="reset-subtitle">重置您的密码</p>
-      <p class="reset-description">请输入您的注册邮箱，我们将向您发送密码重置链接</p>
+      <h1 class="reset-title">{{ t('auth.forgot.title') }}</h1>
+      <p class="reset-subtitle">{{ t('auth.forgot.subtitle') }}</p>
+      <p class="reset-description">{{ t('auth.forgot.desc') }}</p>
       
       <div class="reset-form">
         <!-- 邮箱输入框 -->
         <div class="form-group">
-          <label for="email" class="form-label">邮箱</label>
+          <label for="email" class="form-label">{{ t('auth.login.emailLabel') }}</label>
           <input 
             type="email" 
             id="email" 
             v-model="email" 
             class="form-input" 
-            placeholder="请输入您的邮箱" 
+            :placeholder="t('auth.login.emailPlaceholder')" 
             required
             @input="validateEmail"
           />
@@ -28,12 +28,12 @@
           :disabled="isLoading || emailError || !email.trim()"
         >
           <span v-if="isLoading" class="loading-spinner"></span>
-          {{ isLoading ? '发送中...' : '发送重置链接' }}
+          {{ isLoading ? t('auth.forgot.sending') : t('auth.forgot.sendBtn') }}
         </button>
         
         <!-- 返回登录链接 -->
         <div class="reset-footer">
-          <p>想起密码了？<button class="login-link" @click="handleLogin">返回登录</button></p>
+          <p>{{ t('auth.forgot.remembered') }}<button class="login-link" @click="handleLogin">{{ t('auth.forgot.loginLink') }}</button></p>
         </div>
       </div>
     </div>
@@ -51,10 +51,12 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import apiClient from '@/utils/api.js'
 import ErrorMessage from '@/components/ErrorMessage.vue'
 
 const router = useRouter()
+const { t, locale } = useI18n()
 const email = ref('')
 const isLoading = ref(false)
 const emailError = ref('')
@@ -68,10 +70,10 @@ const errorTitle = ref('提示')
 const validateEmail = () => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!email.value.trim()) {
-    emailError.value = '请输入邮箱'
+    emailError.value = t('auth.register.error.emailRequired')
     return false
   } else if (!emailRegex.test(email.value)) {
-    emailError.value = '请输入有效的邮箱格式'
+    emailError.value = t('auth.register.error.emailInvalid')
     return false
   } else {
     emailError.value = ''
@@ -101,10 +103,13 @@ const handleSendResetLink = async () => {
     isLoading.value = true
     
     // 调用后端API发送重置链接
-    await apiClient.post('/auth/request-reset-password', { email: email.value })
+    await apiClient.post('/auth/request-reset-password', { 
+      email: email.value,
+      locale: locale.value
+    })
     
     // 发送成功，跳转到登录页面并提示
-    showErrorMessage('密码重置链接已发送，请查收邮件', '发送成功')
+    showErrorMessage(t('auth.forgot.success'), t('auth.forgot.success'))
     // 1秒后跳转到登录页面
     setTimeout(() => {
       router.push('/login')
@@ -114,7 +119,7 @@ const handleSendResetLink = async () => {
     if (error.response?.data?.error) {
       emailError.value = error.response.data.error
     } else {
-      showErrorMessage('发送重置链接失败，请重试', '发送失败')
+      showErrorMessage(t('auth.forgot.error.invalidLink'), t('auth.login.error.failed'))
     }
   } finally {
     isLoading.value = false

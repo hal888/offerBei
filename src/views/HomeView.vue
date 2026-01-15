@@ -2,67 +2,67 @@
   <div class="home-container">
     <header class="hero-section">
       <div class="hero-content">
-        <div class="hero-badge">AI 驱动的面试神器</div>
-        <h1>Offer贝，助你轻松拿Offer</h1>
-        <p>一站式解决求职痛点：简历优化、自我介绍生成、智能题库、模拟面试。让每一次面试都自信满满。</p>
+        <div class="hero-badge">{{ t('home.hero.badge') }}</div>
+        <h1>{{ t('home.hero.title') }}</h1>
+        <p>{{ t('home.hero.subtitle') }}</p>
         <div class="cta-buttons">
-          <router-link to="/resume" class="btn primary-btn" @click="trackEvent('home_cta_click', { button: 'start_now' })">立即开始免费使用</router-link>
-          <router-link to="/manual" class="btn secondary-btn" @click="trackEvent('home_cta_click', { button: 'manual' })">使用教程</router-link>
+          <router-link to="/resume" class="btn primary-btn" @click="trackEvent('home_cta_click', { button: 'start_now' })">{{ t('home.hero.startBtn') }}</router-link>
+          <router-link to="/manual" class="btn secondary-btn" @click="trackEvent('home_cta_click', { button: 'manual' })">{{ t('home.hero.manualBtn') }}</router-link>
         </div>
         <div class="hero-stats">
           <div class="stat-item">
             <span class="stat-num">1000+</span>
-            <span class="stat-label">真实面经</span>
+            <span class="stat-label">{{ t('home.hero.stats.experiences') }}</span>
           </div>
           <div class="stat-item">
             <span class="stat-num">98%</span>
-            <span class="stat-label">好评率</span>
+            <span class="stat-label">{{ t('home.hero.stats.rating') }}</span>
           </div>
           <div class="stat-item">
             <span class="stat-num">24h</span>
-            <span class="stat-label">随时待命</span>
+            <span class="stat-label">{{ t('home.hero.stats.availability') }}</span>
           </div>
         </div>
       </div>
     </header>
 
     <section class="features-section">
-      <h2>核心功能</h2>
-      <p class="section-desc">全流程 AI 辅助，从简历到面试，不仅是工具，更是你的私人求职教练</p>
+      <h2>{{ t('home.features.title') }}</h2>
+      <p class="section-desc">{{ t('home.features.subtitle') }}</p>
       <div class="features-grid">
         <div class="feature-card">
           <div class="feature-icon resume-icon"></div>
-          <h3>简历解析与智能优化</h3>
-          <p>基于 AI 深度分析，自动识别简历结构，提供 STAR 法则重写建议，精准注入高频关键词，让你的简历脱颖而出。</p>
-          <router-link to="/resume" class="learn-more">去优化简历 &rarr;</router-link>
+          <h3>{{ t('home.features.resume.title') }}</h3>
+          <p>{{ t('home.features.resume.desc') }}</p>
+          <router-link to="/resume" class="learn-more">{{ t('home.features.resume.action') }} &rarr;</router-link>
         </div>
 
         <div class="feature-card">
           <div class="feature-icon intro-icon"></div>
-          <h3>定制化自我介绍</h3>
-          <p>针对不同面试场景，生成 30秒/3分钟/5分钟 多版本自我介绍。支持口语化润色，提供提词器模式，告别忘词尴尬。</p>
-          <router-link to="/self-intro" class="learn-more">生成自我介绍 &rarr;</router-link>
+          <h3>{{ t('home.features.intro.title') }}</h3>
+          <p>{{ t('home.features.intro.desc') }}</p>
+          <router-link to="/self-intro" class="learn-more">{{ t('home.features.intro.action') }} &rarr;</router-link>
         </div>
 
         <div class="feature-card">
           <div class="feature-icon bank-icon"></div>
-          <h3>智能题库与定向突击</h3>
-          <p>覆盖高频必问、深挖追问、专业技能及行为情景题。AI 智能出题，针对性查漏补缺，拒绝盲目刷题。</p>
-          <router-link to="/question-bank" class="learn-more">开始刷题 &rarr;</router-link>
+          <h3>{{ t('home.features.bank.title') }}</h3>
+          <p>{{ t('home.features.bank.desc') }}</p>
+          <router-link to="/question-bank" class="learn-more">{{ t('home.features.bank.action') }} &rarr;</router-link>
         </div>
 
         <div class="feature-card">
           <div class="feature-icon mock-icon"></div>
-          <h3>全真模拟真人面试</h3>
-          <p>支持语音/文字双模式，可选严厉/温和等多种面试官风格。实时语音交互，课后生成详细复盘报告，快速提升实战能力。</p>
-          <router-link to="/mock-interview" class="learn-more">开始模拟面试 &rarr;</router-link>
+          <h3>{{ t('home.features.mock.title') }}</h3>
+          <p>{{ t('home.features.mock.desc') }}</p>
+          <router-link to="/mock-interview" class="learn-more">{{ t('home.features.mock.action') }} &rarr;</router-link>
         </div>
 
         <div class="feature-card">
           <div class="feature-icon strategy-icon"></div>
-          <h3>面试策略锦囊</h3>
-          <p>独家面试策略库，提供劣势防御话术、薪资谈判技巧及高质量反问问题，助你掌握面试主动权。</p>
-          <router-link to="/strategy" class="learn-more">查看策略 &rarr;</router-link>
+          <h3>{{ t('home.features.strategy.title') }}</h3>
+          <p>{{ t('home.features.strategy.desc') }}</p>
+          <router-link to="/strategy" class="learn-more">{{ t('home.features.strategy.action') }} &rarr;</router-link>
         </div>
       </div>
     </section>
@@ -73,113 +73,50 @@
           <img src="/diverse_roles.png" alt="全行业覆盖，海量题库" />
         </div>
         <div class="roles-content">
-          <h2>全行业覆盖，海量真题库</h2>
-          <p class="roles-subtitle">无论你是技术大牛、产品专家，还是职场新人，offer贝提供专业的面试支持</p>
+          <h2>{{ t('home.roles.title') }}</h2>
+          <p class="roles-subtitle">{{ t('home.roles.subtitle') }}</p>
           <div class="roles-tags">
-            <span class="role-tag">互联网</span>
-            <span class="role-tag">金融</span>
-            <span class="role-tag">教育</span>
-            <span class="role-tag">电商</span>
-            <span class="role-tag">传媒</span>
-            <span class="role-tag">医疗</span>
-            <span class="role-tag">软件开发</span>
-            <span class="role-tag">产品经理</span>
-            <span class="role-tag">运营</span>
-            <span class="role-tag">设计</span>
-            <span class="role-tag">销售</span>
-            <span class="role-tag">HR</span>
+            <span class="role-tag">{{ t('home.roles.tags.internet') }}</span>
+            <span class="role-tag">{{ t('home.roles.tags.finance') }}</span>
+            <span class="role-tag">{{ t('home.roles.tags.education') }}</span>
+            <span class="role-tag">{{ t('home.roles.tags.ecommerce') }}</span>
+            <span class="role-tag">{{ t('home.roles.tags.media') }}</span>
+            <span class="role-tag">{{ t('home.roles.tags.medical') }}</span>
+            <span class="role-tag">{{ t('home.roles.tags.dev') }}</span>
+            <span class="role-tag">{{ t('home.roles.tags.pm') }}</span>
+            <span class="role-tag">{{ t('home.roles.tags.ops') }}</span>
+            <span class="role-tag">{{ t('home.roles.tags.design') }}</span>
+            <span class="role-tag">{{ t('home.roles.tags.sales') }}</span>
+            <span class="role-tag">{{ t('home.roles.tags.hr') }}</span>
           </div>
           <p class="roles-desc">
-            收录全网最新面经，覆盖 100+ 行业，500+ 岗位。针对不同职级定制专属题库，从校招基础到专家深挖，助你从容应对各种面试挑战。
+            {{ t('home.roles.desc') }}
           </p>
-          <router-link to="/question-bank" class="btn primary-btn small-btn">浏览海量题库</router-link>
+          <router-link to="/question-bank" class="btn primary-btn small-btn">{{ t('home.roles.action') }}</router-link>
         </div>
       </div>
     </section>
 
     <section class="testimonials-section">
-      <h2>offer贝 助力 1K+ 求职者斩获心仪 Offer</h2>
-      <p class="section-desc">听听他们怎么说，你的成功也可以复制</p>
+      <h2>{{ t('home.testimonials.title') }}</h2>
+      <p class="section-desc">{{ t('home.testimonials.subtitle') }}</p>
       
       <div class="testimonials-grid">
-        <!-- User 1: Frontend - ByteDance -->
-        <div class="testimonial-card">
+        <div 
+          v-for="(item, index) in testimonialList" 
+          :key="index" 
+          class="testimonial-card"
+        >
           <div class="card-header">
-            <img src="/avatar_1.png" alt="User Avatar" class="user-avatar" />
+            <img :src="item.avatar" alt="User Avatar" class="user-avatar" />
             <div class="user-info">
-              <h4>张沐熙</h4>
-              <p>字节跳动 · 前端开发</p>
+              <h4>{{ t(`home.testimonials.items[${index}].name`) }}</h4>
+              <p>{{ t(`home.testimonials.items[${index}].role`) }}</p>
             </div>
             <div class="rating">⭐⭐⭐⭐⭐</div>
           </div>
-          <p class="card-text">"模拟面试真的太强了！AI 面试官问的 React 原理和性能优化问题非常有深度，和我实际面试遇到的几乎一模一样。提前演练让我面试时自信了很多。"</p>
+          <p class="card-text">"{{ t(`home.testimonials.items[${index}].text`) }}"</p>
         </div>
-
-        <!-- User 2: Product - Tencent -->
-        <div class="testimonial-card">
-          <div class="card-header">
-            <img src="/avatar_2_real_cn.png" alt="User Avatar" class="user-avatar" />
-            <div class="user-info">
-              <h4>Ruby</h4>
-              <p>腾讯 · 产品经理</p>
-            </div>
-            <div class="rating">⭐⭐⭐⭐⭐</div>
-          </div>
-          <p class="card-text">"简历优化功能帮了大忙。AI 指出的 STAR 法则应用问题一针见血，修改后的简历通过率明显提升。产品思维题库也很棒，拓宽了我的思路。"</p>
-        </div>
-
-        <!-- User 3: Backend - Alibaba -->
-        <div class="testimonial-card">
-          <div class="card-header">
-            <img src="/avatar_3_real_cn.png" alt="User Avatar" class="user-avatar" />
-            <div class="user-info">
-              <h4>王晓飞</h4>
-              <p>阿里巴巴 · Java 后端</p>
-            </div>
-            <div class="rating">⭐⭐⭐⭐⭐</div>
-          </div>
-          <p class="card-text">"作为技术人，最怕面试被问倒。offer贝的智能题库覆盖了高并发、微服务等核心考点，高分思路解析让我学会了如何系统化地回答技术难题。"</p>
-        </div>
-
-        <!-- User 4: Data Analyst - Meituan -->
-        <div class="testimonial-card">
-          <div class="card-header">
-            <img src="/avatar_4_scenery.png" alt="User Avatar" class="user-avatar" />
-            <div class="user-info">
-              <h4>Chloe Chen</h4>
-              <p>美团 · 数据分析</p>
-            </div>
-            <div class="rating">⭐⭐⭐⭐⭐</div>
-          </div>
-          <p class="card-text">"面试策略锦囊里的薪资谈判技巧很实用！让我成功在 Offer 沟通环节争取到了期望的薪资包（涨幅 30%+）。非常感谢 offer贝 的指导！"</p>
-        </div>
-
-        <!-- User 5: Operations - Xiaohongshu -->
-        <div class="testimonial-card">
-          <div class="card-header">
-            <img src="/avatar_5_anime.png" alt="User Avatar" class="user-avatar" />
-            <div class="user-info">
-              <h4>风禾尽起</h4>
-              <p>小红书 · 用户运营</p>
-            </div>
-            <div class="rating">⭐⭐⭐⭐⭐</div>
-          </div>
-          <p class="card-text">"自我介绍生成器太好用了，针对不同时长的版本都有。提词器功能让我录制视频面试时完全不卡壳，表现非常自然流畅。"</p>
-        </div>
-
-        <!-- User 6: Algo - Huawei -->
-        <div class="testimonial-card">
-          <div class="card-header">
-            <img src="/avatar_6_real_cn.png" alt="User Avatar" class="user-avatar" />
-            <div class="user-info">
-              <h4>赵科瑞</h4>
-              <p>华为 · 算法工程师</p>
-            </div>
-            <div class="rating">⭐⭐⭐⭐⭐</div>
-          </div>
-          <p class="card-text">"对于算法岗，深挖项目细节是常态。AI 模拟面试能够针对我的项目经历进行多轮追问，帮我理清了逻辑漏洞，实战效果满分。"</p>
-        </div>
-
       </div>
     </section>
 
@@ -188,6 +125,19 @@
 
 <script setup>
 import { trackEvent } from '@/utils/analytics'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+
+// Testimonial avatars mapping
+const testimonialList = [
+  { avatar: '/avatar_1.png' },
+  { avatar: '/avatar_2_real_cn.png' },
+  { avatar: '/avatar_3_real_cn.png' },
+  { avatar: '/avatar_4_scenery.png' },
+  { avatar: '/avatar_5_anime.png' },
+  { avatar: '/avatar_6_real_cn.png' }
+]
 </script>
 
 <style scoped>

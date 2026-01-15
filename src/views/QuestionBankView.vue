@@ -1,23 +1,23 @@
 <template>
   <div class="question-bank-container">
-    <h1>智能题库与定向突击</h1>
+    <h1>{{ $t('pages.questionBank.title') }}</h1>
     
     <!-- 生成题库遮盖层 -->
     <div v-if="isGenerating" class="generate-overlay">
       <div class="generate-loading">
         <div class="loading-spinner"></div>
-        <h3>题库生成中...</h3>
-        <p>正在基于您的简历内容生成个性化面试问题，请稍候</p>
+        <h3>{{ $t('loading.generatingBank') }}</h3>
+        <p>{{ $t('loading.generatingBankDesc') }}</p>
       </div>
     </div>
     
     <div class="question-config-section">
       <div class="config-card">
-        <h2>配置题库</h2>
+        <h2>{{ $t('pages.questionBank.desc') }}</h2>
         
         <div class="config-options">
           <div class="option-group">
-            <label>题目数量</label>
+            <label>{{ $t('pages.questionBank.count.label') }}</label>
             <div class="option-buttons">
               <button 
                 v-for="count in questionCounts" 
@@ -25,43 +25,43 @@
                 :class="['option-btn', { active: selectedCount === count }]" 
                 @click="selectedCount = count"
               >
-                {{ count }}题
+                {{ count }}{{ $t('pages.questionBank.count.suffix') }}
               </button>
             </div>
             <p class="option-desc">{{ getCountDescription(selectedCount) }}</p>
           </div>
 
           <div class="option-group">
-            <label>题型分布</label>
+            <label>{{ $t('pages.questionBank.typeDistribution') }}</label>
             <div class="question-types">
               <div class="type-item">
-                <span class="type-label">高频必问题</span>
+                <span class="type-label">{{ $t('pages.questionBank.types.highFreq') }}</span>
                 <span class="type-percentage">30%</span>
               </div>
               <div class="type-item">
-                <span class="type-label">简历深挖题</span>
+                <span class="type-label">{{ $t('pages.questionBank.types.deepDive') }}</span>
                 <span class="type-percentage">25%</span>
               </div>
               <div class="type-item">
-                <span class="type-label">专业技能题</span>
+                <span class="type-label">{{ $t('pages.questionBank.types.technical') }}</span>
                 <span class="type-percentage">25%</span>
               </div>
               <div class="type-item">
-                <span class="type-label">行为/情景题</span>
+                <span class="type-label">{{ $t('pages.questionBank.types.behavioral') }}</span>
                 <span class="type-percentage">20%</span>
               </div>
             </div>
           </div>
 
           <div class="option-group">
-            <label>自定义话题（可选）</label>
+            <label>{{ $t('pages.questionBank.topic.label') }}</label>
             <input 
               type="text" 
               v-model="customTopic" 
-              placeholder="输入特定话题，如'Spring Cloud'、'危机公关'"
+              :placeholder="$t('pages.questionBank.topic.placeholder')"
               :disabled="isGenerating"
             />
-            <p class="option-desc">系统将结合您的简历背景和指定话题生成相关问题</p>
+            <p class="option-desc">{{ $t('pages.questionBank.topic.desc') }}</p>
           </div>
 
           <button 
@@ -70,24 +70,24 @@
             :disabled="isGenerating"
           >
             <span class="btn-icon">🎯</span>
-            {{ isGenerating ? '生成中...' : '生成题库' }}
+            {{ isGenerating ? $t('loading.generatingBank') : $t('pages.questionBank.generate') }}
           </button>
         </div>
       </div>
     </div>
 
     <div v-if="questions.length > 0" class="questions-section">
-      <h2>智能题库</h2>
+      <h2>{{ $t('pages.questionBank.resultTitle') }}</h2>
       
       <div class="questions-header">
         <div class="questions-info">
-          <span class="total-count">{{ questions.length }}题</span>
-          <span class="topic-tag" v-if="customTopic">话题：{{ customTopic }}</span>
+          <span class="total-count">{{ questions.length }}{{ $t('pages.questionBank.count.suffix') }}</span>
+          <span class="topic-tag" v-if="customTopic">{{ $t('pages.questionBank.topicLabel') }}：{{ customTopic }}</span>
         </div>
         <div class="questions-actions">
           <button class="action-btn" @click="exportQuestions">
             <span class="action-icon">📥</span>
-            导出题库
+            {{ $t('pages.questionBank.export') }}
           </button>
         </div>
       </div>
@@ -108,19 +108,19 @@
           <div class="question-footer">
             <button class="expand-btn" @click="toggleAnswer(index)">
               <span class="expand-icon">{{ question.showAnswer ? '▼' : '▶️' }}</span>
-              {{ question.showAnswer ? '收起答案' : '查看参考答案' }}
+              {{ question.showAnswer ? $t('pages.questionBank.hideAnswer') : $t('pages.questionBank.showAnswer') }}
             </button>
           </div>
           
           <div v-if="question.showAnswer" class="answer-section">
             <div class="answer-header">
-              <h4>参考答案</h4>
+              <h4>{{ $t('pages.questionBank.answerTitle') }}</h4>
             </div>
             <div class="answer-content">
               {{ question.answer }}
             </div>
             <div class="answer-analysis">
-              <h5>面试官意图</h5>
+              <h5>{{ $t('pages.questionBank.interviewerIntent') }}</h5>
               <p>{{ question.analysis }}</p>
             </div>
           </div>
@@ -141,6 +141,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import apiClient from '@/utils/api.js'
 import ErrorMessage from '@/components/ErrorMessage.vue'
 import jsPDF from 'jspdf'
@@ -148,6 +149,7 @@ import html2canvas from 'html2canvas'
 import { trackEvent } from '@/utils/analytics'
 
 const router = useRouter()
+const { t } = useI18n()
 
 // 错误提示相关
 const showError = ref(false)
@@ -157,7 +159,7 @@ const errorTitle = ref('提示')
 const errorCloseCallback = ref(null)
 
 // 显示错误信息
-const showErrorMessage = (message, title = '提示', callback = null) => {
+const showErrorMessage = (message, title = t('alerts.title'), callback = null) => {
   errorMessage.value = message
   errorTitle.value = title
   errorCloseCallback.value = callback
@@ -168,7 +170,7 @@ const showErrorMessage = (message, title = '提示', callback = null) => {
 const closeError = () => {
   showError.value = false
   errorMessage.value = ''
-  errorTitle.value = '提示'
+  errorTitle.value = t('alerts.title')
   // 执行回调函数
   if (errorCloseCallback.value) {
     const callback = errorCloseCallback.value
@@ -234,11 +236,11 @@ const fetchQuestionBank = async () => {
     console.log('获取已生成题库失败:', error)
     if (error.isUnauthorized) {
       // 401错误，显示请先登录提示，点击确定后跳转到登录页
-      showErrorMessage('请先登录', '提示', () => {
+      showErrorMessage(t('alerts.loginRequired'), t('alerts.title'), () => {
         router.push('/login')
       })
     } else if (error.response && error.response.data && error.response.data.error === 'User not found') {
-      showErrorMessage('请先上传简历进行优化，然后再生成题库', '提示', () => {
+      showErrorMessage(t('alerts.uploadResumeFirst'), t('alerts.title'), () => {
         router.push('/resume')
       })
     }
@@ -249,9 +251,9 @@ const fetchQuestionBank = async () => {
 const questionCounts = [10, 30, 50]
 
 const getCountDescription = (count) => {
-  if (count === 10) return '极简模式，适合快速体验或重点突破'
-  if (count === 30) return '快速模式，适合时间紧张的用户'
-  if (count === 50) return '标准模式，平衡深度和广度'
+  if (count === 10) return t('pages.questionBank.count.desc10')
+  if (count === 30) return t('pages.questionBank.count.desc30')
+  if (count === 50) return t('pages.questionBank.count.desc50')
   return ''
 }
 
@@ -326,11 +328,11 @@ const generateQuestions = () => {
     
     if (error.isUnauthorized) {
       // 401错误，显示请先登录提示，点击确定后跳转到登录页
-      showErrorMessage('请先登录', '提示', () => {
+      showErrorMessage(t('alerts.loginRequired'), t('alerts.title'), () => {
         router.push('/login')
       })
     } else {
-      showErrorMessage('生成题库失败，请重试', '失败')
+      showErrorMessage(t('alerts.generateBankFailed'), t('alerts.title'))
     }
   })
   .finally(() => {
@@ -344,7 +346,7 @@ const toggleAnswer = (index) => {
 
 const exportQuestions = async () => {
   if (questions.value.length === 0) {
-    showErrorMessage('请先生成题库', '提示')
+    showErrorMessage(t('alerts.generateBankFirst'), t('alerts.title'))
     return
   }
 
@@ -535,7 +537,7 @@ const exportQuestions = async () => {
     document.body.removeChild(tempContainer)
   } catch (error) {
     console.error('生成PDF失败:', error)
-    showErrorMessage('生成PDF失败，请重试', '失败')
+    showErrorMessage(t('alerts.generatePdfFailed'), t('alerts.title'))
   }
 }
 

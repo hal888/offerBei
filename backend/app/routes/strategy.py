@@ -4,6 +4,7 @@ from ..services.deepseek_service import client
 from ..services.file_service import get_resume_content
 from ..models import db, User, InterviewStrategy
 from ..utils.jwt_utils import auth_required
+from ..utils.messages import get_message
 
 # 创建蓝图
 bp = Blueprint('strategy', __name__, url_prefix='/api/strategy')
@@ -16,6 +17,7 @@ def analysis():
     background_info = data.get('backgroundInfo', '')
     directions = data.get('directions', [])
     user_id = request.user_id
+    locale = request.headers.get('X-Locale', 'zh')
     
     # 根据userId获取最新的resumeId
     resume_id = '1'  # 默认值
@@ -169,7 +171,8 @@ def analysis():
                         "针对常见问题提前准备回答框架"
                     ]
                 }
-            ]
+            ],
+            "message": get_message('analysis_gen_failed', locale, error=str(e))
         }
         
         return jsonify(result), 200
@@ -179,18 +182,19 @@ def analysis():
 def get_analysis_history():
     """获取用户的策略分析历史记录API"""
     user_id = request.user_id
+    locale = request.headers.get('X-Locale', 'zh')
     
     # 打印请求参数
     print(f"[API LOG] /api/strategy/analysis/history - Request received: userId={user_id}")
     
     if not user_id:
-        return jsonify({"error": "Missing userId"}), 400
+        return jsonify({"error": get_message('missing_params', locale)}), 400
     
     try:
         # 获取用户
         user = User.query.filter_by(user_id=user_id).first()
         if not user:
-            return jsonify({"error": "User not found"}), 404
+            return jsonify({"error": get_message('user_not_found', locale)}), 404
         
         # 获取用户的所有策略分析记录
         strategies = InterviewStrategy.query.filter_by(user_id=user_id, type='analysis').order_by(InterviewStrategy.created_at.desc()).all()
@@ -210,7 +214,7 @@ def get_analysis_history():
         return jsonify(history), 200
     except Exception as e:
         print(f"获取策略分析历史失败: {e}")
-        return jsonify({"error": "Failed to get analysis history"}), 500
+        return jsonify({"error": get_message('get_analysis_history_failed', locale)}), 500
 
 @bp.route('/questions', methods=['POST'])
 @auth_required
@@ -222,6 +226,7 @@ def questions():
     question_types = data.get('questionTypes', [])
     # 从request对象中获取用户ID，这是auth_required装饰器设置的
     user_id = request.user_id
+    locale = request.headers.get('X-Locale', 'zh')
     
     # 根据userId获取最新的resumeId
     resume_id = '1'  # 默认值
@@ -413,13 +418,13 @@ def get_questions_history():
     print(f"[API LOG] /api/strategy/questions/history - Request received: userId={user_id}")
     
     if not user_id:
-        return jsonify({"error": "Missing userId"}), 400
+        return jsonify({"error": get_message('missing_params', locale)}), 400
     
     try:
         # 获取用户
         user = User.query.filter_by(user_id=user_id).first()
         if not user:
-            return jsonify({"error": "User not found"}), 404
+            return jsonify({"error": get_message('user_not_found', locale)}), 404
         
         # 获取用户的所有反问问题记录
         strategies = InterviewStrategy.query.filter_by(user_id=user_id, type='questions').order_by(InterviewStrategy.created_at.desc()).all()
@@ -440,4 +445,4 @@ def get_questions_history():
         return jsonify(history), 200
     except Exception as e:
         print(f"获取反问问题历史失败: {e}")
-        return jsonify({"error": "Failed to get questions history"}), 500
+        return jsonify({"error": get_message('get_questions_history_failed', locale)}), 500

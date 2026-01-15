@@ -1,21 +1,21 @@
 <template>
   <div class="resume-container">
-    <h1>简历解析与智能优化</h1>
+    <h1>{{ $t('pages.resume.title') }}</h1>
     
     <!-- 上传加载遮盖层 -->
     <div v-if="isUploading" class="upload-overlay">
       <div class="loading-container">
         <div class="loading-spinner"></div>
-        <h3>简历上传中...</h3>
-        <p>正在分析您的简历，请稍候</p>
+        <h3>{{ t('loading.resumeUploading') }}</h3>
+        <p>{{ t('loading.resumeAnalyzing') }}</p>
       </div>
     </div>
     
     <div class="resume-upload-section">
       <div class="upload-card">
         <div class="upload-icon"></div>
-        <h2>上传您的简历</h2>
-        <p>支持 PDF 格式，单文件 ≤ 10MB</p>
+        <h2>{{ $t('pages.resume.upload.title') }}</h2>
+        <p>{{ $t('pages.resume.upload.format') }}</p>
         
         <div class="upload-options">
           <div class="file-input-container">
@@ -24,12 +24,12 @@
             <input ref="fileInputGallery" type="file" accept="image/*" @change="handleFileUpload" style="display:none" />
             <button class="file-input-label" :class="{ 'disabled': isUploading }" @click="openUploadModal">
               <span class="file-icon">📁</span>
-              选择文件
+              {{ $t('pages.resume.upload.selectFile') }}
             </button>
           </div>
           
           <div class="drag-drop-area" @dragover.prevent @drop.prevent="handleDragDrop" :class="{ 'disabled': isUploading }">
-            <span>或拖拽文件到此处</span>
+            <span>{{ $t('pages.resume.upload.dragDrop') }}</span>
           </div>
         </div>
       </div>
@@ -37,14 +37,14 @@
 
     <!-- 只有在有简历数据时才渲染分析结果 -->
     <div v-if="resumeData" class="resume-analysis-section">
-      <h2>简历分析结果</h2>
+      <h2>{{ $t('pages.resume.analysis.title') }}</h2>
       
       <div class="analysis-header">
         <div class="resume-score">
-          <h3>简历评分</h3>
+          <h3>{{ $t('pages.resume.analysis.score') }}</h3>
           <div class="score-circle">
             <span class="score-value">{{ resumeData.score }}</span>
-            <span class="score-max">/100</span>
+            <span class="score-max">{{ $t('pages.resume.analysis.scoreMax') }}</span>
           </div>
           <p class="score-description">{{ getScoreDescription(resumeData.score) }}</p>
         </div>
@@ -52,7 +52,7 @@
 
       <div class="analysis-content">
         <div class="diagnosis-section">
-          <h3>智能诊断</h3>
+          <h3>{{ $t('pages.resume.analysis.diagnosis') }}</h3>
           <div class="diagnosis-list">
             <div v-for="(item, index) in resumeData.diagnosis" :key="index" class="diagnosis-item">
               <div class="diagnosis-type" :class="item.type">{{ item.type }}</div>
@@ -65,7 +65,7 @@
         </div>
 
         <div class="optimization-section">
-          <h3>智能优化建议</h3>
+          <h3>{{ $t('pages.resume.analysis.optimization') }}</h3>
           <div class="optimization-tabs">
             <button 
               v-for="tab in optimizationTabs" 
@@ -78,57 +78,57 @@
           </div>
 
           <div class="optimization-content">
-            <div v-if="activeTab === 'STAR法则重写'" class="star-rewrite">
-              <h4>STAR法则优化建议</h4>
+            <div v-if="activeTab === $t('pages.resume.tabs.star')" class="star-rewrite">
+              <h4>{{ $t('pages.resume.star.title') }}</h4>
               <div v-if="resumeData.starRewrite && resumeData.starRewrite.length > 0" class="star-list">
                 <div v-for="(item, index) in resumeData.starRewrite" :key="index" class="star-item optimized">
                   <div class="star-section">
-                    <span class="star-label">情境(S)：</span>
-                    <span class="star-content">{{ item.situation || '无' }}</span>
+                    <span class="star-label">{{ $t('pages.resume.star.situation') }}</span>
+                    <span class="star-content">{{ item.situation || $t('pages.resume.star.none') }}</span>
                   </div>
                   <div class="star-section">
-                    <span class="star-label">任务(T)：</span>
-                    <span class="star-content">{{ item.task || '无' }}</span>
+                    <span class="star-label">{{ $t('pages.resume.star.task') }}</span>
+                    <span class="star-content">{{ item.task || $t('pages.resume.star.none') }}</span>
                   </div>
                   <div class="star-section">
-                    <span class="star-label">行动(A)：</span>
-                    <span class="star-content">{{ item.action || '无' }}</span>
+                    <span class="star-label">{{ $t('pages.resume.star.action') }}</span>
+                    <span class="star-content">{{ item.action || $t('pages.resume.star.none') }}</span>
                   </div>
                   <div class="star-section">
-                    <span class="star-label">结果(R)：</span>
-                    <span class="star-content">{{ item.result || '无' }}</span>
+                    <span class="star-label">{{ $t('pages.resume.star.result') }}</span>
+                    <span class="star-content">{{ item.result || $t('pages.resume.star.none') }}</span>
                   </div>
                 </div>
               </div>
               <div v-else class="star-placeholder">
-                <p>暂无STAR法则优化建议</p>
+                <p>{{ $t('pages.resume.star.empty') }}</p>
               </div>
             </div>
 
-            <div v-if="activeTab === '关键词注入'" class="keyword-injection">
-              <h4>关键词优化建议</h4>
+            <div v-if="activeTab === $t('pages.resume.tabs.keyword')" class="keyword-injection">
+              <h4>{{ $t('pages.resume.keyword.title') }}</h4>
               <div class="keyword-list">
                 <div class="keyword-item" v-for="(keyword, index) in resumeData.keywords" :key="index">
                   <span class="keyword">{{ keyword }}</span>
                   <span class="keyword-type">{{ getKeywordType(keyword) }}</span>
                 </div>
               </div>
-              <p class="keyword-tip">建议在简历中自然融入以上关键词，提升ATS系统匹配度</p>
+              <p class="keyword-tip">{{ $t('pages.resume.keyword.tip') }}</p>
             </div>
           </div>
         </div>
 
         <div class="preview-section">
-          <h3>优化后简历预览</h3>
+          <h3>{{ $t('pages.resume.analysis.preview') }}</h3>
           <div class="preview-content">
             <div v-if="resumeData.optimizedResume" class="preview-text">
               <div class="resume-preview" v-html="formattedResume"></div>
             </div>
             <div v-else class="preview-placeholder">
-              <span>简历预览区域</span>
+              <span>{{ $t('pages.resume.analysis.previewPlaceholder') }}</span>
             </div>
             <div class="preview-actions">
-              <button class="btn primary-btn" @click="downloadResume">下载优化后简历</button>
+              <button class="btn primary-btn" @click="downloadResume">{{ $t('pages.resume.analysis.download') }}</button>
             </div>
           </div>
         </div>
@@ -139,22 +139,22 @@
     <div v-if="showUploadModal" class="upload-modal-overlay" @click.self="hideUploadModal">
       <div class="upload-modal">
         <div class="upload-modal-header">
-          <div class="upload-modal-title">选择来源</div>
+            <div class="upload-modal-title">{{ $t('pages.resume.upload.selectSource') }}</div>
           <button class="upload-modal-close" @click="hideUploadModal">✕</button>
         </div>
         <div class="upload-options-grid">
           <div class="upload-option" @click="openFiles">
             <div class="upload-option-icon">📁</div>
-            <div>文件</div>
+            <div>{{ $t('pages.resume.upload.file') }}</div>
           </div>
         </div>
        
         <!-- 延迟渲染最近文件列表，减少初始渲染时间 -->
         <div class="recent-files-container" v-if="showUploadModal">
           <div class="recent-files-header">
-            <div>最近文件</div>
+            <div>{{ $t('pages.resume.upload.recentFiles') }}</div>
             <div class="recent-files-actions">
-              <button class="browse-btn" @click="openSystemFilePicker">浏览</button>
+              <button class="browse-btn" @click="openSystemFilePicker">{{ $t('pages.resume.upload.browse') }}</button>
             </div>
           </div>
           <div class="recent-files-list">
@@ -200,12 +200,14 @@
 
 <script setup>
 import { ref, computed, onMounted, onActivated, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import apiClient from '@/utils/api.js'
 import { useRouter } from 'vue-router'
 import ErrorMessage from '@/components/ErrorMessage.vue'
 import { trackEvent } from '@/utils/analytics'
 
 const router = useRouter()
+const { t } = useI18n()
 
 // 动态导入大型库，减少初始加载时间
 const loadLibraries = {
@@ -251,8 +253,11 @@ const initMarkedAndHighlight = async () => {
 }
 
 const resumeData = ref(null)
-const activeTab = ref('STAR法则重写')
-const optimizationTabs = ['STAR法则重写', '关键词注入']
+const activeTab = ref(t('pages.resume.tabs.star'))
+const optimizationTabs = computed(() => [
+  t('pages.resume.tabs.star'),
+  t('pages.resume.tabs.keyword')
+])
 const isUploading = ref(false)
 const showUploadModal = ref(false)
 const recentFiles = ref([])
@@ -270,7 +275,7 @@ const errorTitle = ref('提示')
 const errorCloseCallback = ref(null)
 
 // 显示错误信息
-const showErrorMessage = (message, title = '提示', callback = null) => {
+const showErrorMessage = (message, title = t('alerts.title'), callback = null) => {
   errorMessage.value = message
   errorTitle.value = title
   errorCloseCallback.value = callback
@@ -281,7 +286,7 @@ const showErrorMessage = (message, title = '提示', callback = null) => {
 const closeError = () => {
   showError.value = false
   errorMessage.value = ''
-  errorTitle.value = '提示'
+  errorTitle.value = t('alerts.title')
   // 执行回调函数
   if (errorCloseCallback.value) {
     const callback = errorCloseCallback.value
@@ -298,7 +303,7 @@ const checkLoginStatus = () => {
   // 如果没有userId，直接显示登录提示
   if (!userId) {
     // 显示请先登录提示，点击确定后跳转到登录页
-    showErrorMessage('请先登录', '提示', () => {
+    showErrorMessage(t('alerts.loginRequired'), t('alerts.title'), () => {
       router.push('/login')
     })
   }
@@ -331,7 +336,7 @@ onMounted(async () => {
       console.log('获取最新简历失败:', error)
       if (error.isUnauthorized) {
         // 401错误，显示请先登录提示，点击确定后跳转到登录页
-        showErrorMessage('请先登录', '提示', () => {
+        showErrorMessage(t('alerts.loginRequired'), t('alerts.title'), () => {
           router.push('/login')
         })
       }
@@ -368,7 +373,7 @@ const handleDragDrop = (event) => {
 const uploadResume = (file) => {
   // 验证文件类型，只接受PDF文件
   if (!file.name.toLowerCase().endsWith('.pdf')) {
-    showErrorMessage('只支持PDF格式文件，请重新选择', '提示')
+    showErrorMessage(t('alerts.pdfOnly'), t('alerts.title'))
     return
   }
   
@@ -402,11 +407,11 @@ const uploadResume = (file) => {
     console.error('简历分析失败:', error)
     if (error.isUnauthorized) {
       // 401错误，显示请先登录提示，点击确定后跳转到登录页
-      showErrorMessage('请先登录', '提示', () => {
+      showErrorMessage(t('alerts.loginRequired'), t('alerts.title'), () => {
         router.push('/login')
       })
     } else {
-      showErrorMessage('简历分析失败，请重试', '失败')
+      showErrorMessage(t('alerts.resumeAnalysisFailed'), t('alerts.title'))
     }
   })
   .finally(() => {
@@ -442,7 +447,7 @@ const openFiles = async () => {
     }
   } catch (e) {
     console.error('文件选择器打开失败:', e)
-    recentFilesError.value = '无法打开文件选择器，请重试'
+    recentFilesError.value = t('alerts.filePickerError')
   }
 }
 
@@ -575,7 +580,7 @@ const loadRecentFiles = async () => {
       
       req.onerror = () => {
         recentFilesLoading.value = false
-        recentFilesError.value = '读取最近文件失败，请稍后重试'
+        recentFilesError.value = t('alerts.loadRecentFailed')
         recentFiles.value = []
         console.error('读取最近文件失败')
       }
@@ -724,7 +729,7 @@ const downloadResume = async () => {
     doc.save('optimized_resume.pdf')
   } catch (error) {
     console.error('生成PDF失败:', error)
-    showErrorMessage('生成PDF失败，请重试', '失败')
+    showErrorMessage(t('alerts.generatePdfFailed'), t('alerts.title'))
   }
 }
 

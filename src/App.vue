@@ -1,7 +1,7 @@
 <script setup>
 // App.vue - Main application component with navigation
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Footer from '@/components/Footer.vue'
 
 // 导航栏显示状态
@@ -22,6 +22,7 @@ const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024
 const isMenuExpanded = ref(false)
 // 获取当前路由
 const route = useRoute()
+const router = useRouter()
 // 用于触发重新计算登录状态的触发器
 const loginStatusTrigger = ref(0)
 
@@ -144,8 +145,62 @@ onUnmounted(() => {
   }
 })
 
+// i18n
+import { useI18n } from 'vue-i18n'
+const { t, locale } = useI18n()
+
+const toggleLanguage = () => {
+  locale.value = locale.value === 'zh' ? 'en' : 'zh'
+  localStorage.setItem('user-locale', locale.value)
+}
+
+// 更新页面Meta标签的函数
+const updatePageMeta = () => {
+  // Update HTML lang attribute
+  document.documentElement.lang = locale.value === 'zh' ? 'zh-CN' : 'en-US'
+
+  // Get current route meta
+  const meta = route.meta
+
+  // Update Title
+  if (meta && meta.title) {
+    document.title = t(meta.title)
+  } else {
+    document.title = t('router.home.title') // Default fallback
+  }
+  
+  // Update Keywords
+  const metaKeywords = document.querySelector('meta[name="keywords"]')
+  if (metaKeywords) {
+    if (meta.keywords) {
+      metaKeywords.setAttribute('content', t(meta.keywords))
+    } else {
+      metaKeywords.setAttribute('content', t('router.home.keywords'))
+    }
+  }
+  
+  // Update Description
+  const metaDescription = document.querySelector('meta[name="description"]')
+  if (metaDescription) {
+    if (meta.description) {
+      metaDescription.setAttribute('content', t(meta.description))
+    } else {
+      metaDescription.setAttribute('content', t('router.home.description'))
+    }
+  }
+}
+
+// Watch locale and route to update meta tags
+watch([locale, () => route.path], () => {
+  updatePageMeta()
+})
+
 // 组件挂载后动态插入JSON-LD Schema标记
-onMounted(() => {
+onMounted(async () => {
+  // 等待router完全准备好后再更新页面Meta
+  await router.isReady()
+  updatePageMeta()
+  
   // 只在浏览器环境中执行
   if (typeof window !== 'undefined') {
     // 创建script标签
@@ -186,8 +241,8 @@ onMounted(() => {
         <div class="navbar-header">
           <div class="navbar-brand">
             <router-link to="/" class="brand-link" @click="closeMenu">
-              <img src="/logo.webp" alt="Offer贝 - 面试必备" class="brand-icon" />
-              <span class="brand-name">Offer贝</span>
+              <img src="/logo.webp" :alt="t('meta.title')" class="brand-icon" />
+              <span class="brand-name">{{ t('nav.brand') }}</span>
             </router-link>
           </div>
           <!-- 移动端折叠按钮 -->
@@ -199,39 +254,43 @@ onMounted(() => {
         <div class="navbar-menu" :class="{ 'menu-expanded': isMenuExpanded && isMobileView }">
           <!-- Default Navigation for Visitors -->
           <template v-if="!isUserLoggedIn">
-            <router-link to="/" class="nav-link" exact-active-class="active" @click="closeMenu">首页</router-link>
+            <router-link to="/" class="nav-link" exact-active-class="active" @click="closeMenu">{{ t('nav.home') }}</router-link>
             
             <!-- Product Features Dropdown -->
             <div class="nav-dropdown">
-              <span class="nav-link dropdown-trigger">产品功能 <i class="icon-down">▾</i></span>
+              <span class="nav-link dropdown-trigger">{{ t('nav.features') }} <i class="icon-down">▾</i></span>
               <div class="dropdown-content">
-                <router-link to="/resume" class="dropdown-item" @click="closeMenu">简历优化</router-link>
-                <router-link to="/self-intro" class="dropdown-item" @click="closeMenu">自我介绍</router-link>
-                <router-link to="/question-bank" class="dropdown-item" @click="closeMenu">智能题库</router-link>
-                <router-link to="/mock-interview" class="dropdown-item" @click="closeMenu">模拟面试</router-link>
-                <router-link to="/strategy" class="dropdown-item" @click="closeMenu">面试策略</router-link>
+                <router-link to="/resume" class="dropdown-item" @click="closeMenu">{{ t('nav.resume') }}</router-link>
+                <router-link to="/self-intro" class="dropdown-item" @click="closeMenu">{{ t('nav.selfIntro') }}</router-link>
+                <router-link to="/question-bank" class="dropdown-item" @click="closeMenu">{{ t('nav.questionBank') }}</router-link>
+                <router-link to="/mock-interview" class="dropdown-item" @click="closeMenu">{{ t('nav.mockInterview') }}</router-link>
+                <router-link to="/strategy" class="dropdown-item" @click="closeMenu">{{ t('nav.strategy') }}</router-link>
               </div>
             </div>
 
-            <router-link to="/manual" class="nav-link" exact-active-class="active" @click="closeMenu">使用教程</router-link>
+            <router-link to="/manual" class="nav-link" exact-active-class="active" @click="closeMenu">{{ t('nav.manual') }}</router-link>
           </template>
 
           <!-- Navigation for Logged-in Users -->
           <template v-else>
-            <router-link to="/resume" class="nav-link" exact-active-class="active" @click="closeMenu">简历优化</router-link>
-            <router-link to="/self-intro" class="nav-link" exact-active-class="active" @click="closeMenu">自我介绍</router-link>
-            <router-link to="/question-bank" class="nav-link" exact-active-class="active" @click="closeMenu">智能题库</router-link>
-            <router-link to="/mock-interview" class="nav-link" exact-active-class="active" @click="closeMenu">模拟面试</router-link>
-            <router-link to="/strategy" class="nav-link" exact-active-class="active" @click="closeMenu">面试策略</router-link>
+            <router-link to="/resume" class="nav-link" exact-active-class="active" @click="closeMenu">{{ t('nav.resume') }}</router-link>
+            <router-link to="/self-intro" class="nav-link" exact-active-class="active" @click="closeMenu">{{ t('nav.selfIntro') }}</router-link>
+            <router-link to="/question-bank" class="nav-link" exact-active-class="active" @click="closeMenu">{{ t('nav.questionBank') }}</router-link>
+            <router-link to="/mock-interview" class="nav-link" exact-active-class="active" @click="closeMenu">{{ t('nav.mockInterview') }}</router-link>
+            <router-link to="/strategy" class="nav-link" exact-active-class="active" @click="closeMenu">{{ t('nav.strategy') }}</router-link>
           </template>
           
           <div class="nav-spacer"></div>
 
+          <button class="nav-link lang-btn" @click="toggleLanguage">
+            {{ locale === 'zh' ? 'En' : '中' }}
+          </button>
+
           <template v-if="isUserLoggedIn">
-            <button class="nav-link logout-btn" @click="handleLogout">退出登录</button>
+            <button class="nav-link logout-btn" @click="handleLogout">{{ t('nav.logout') }}</button>
           </template>
           <template v-else>
-            <router-link to="/login" class="nav-link btn-login" @click="closeMenu">登录/注册</router-link>
+            <router-link to="/login" class="nav-link btn-login" @click="closeMenu">{{ t('nav.loginRegister') }}</router-link>
           </template>
         </div>
       </div>
@@ -996,8 +1055,16 @@ onMounted(() => {
 /* 移除登录、注册、退出按钮的顶部装饰条 */
 .nav-link.login-btn::before,
 .nav-link.register-btn::before,
-.nav-link.logout-btn::before {
+.nav-link.logout-btn::before,
+.nav-link.lang-btn::before {
   content: none !important;
+}
+
+.nav-link.lang-btn {
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 8px 16px;
+  cursor: pointer;
 }
 
 /* 确保所有导航链接文字不换行 */

@@ -1,20 +1,20 @@
 <template>
   <div class="reset-container">
     <div class="reset-card">
-      <h1 class="reset-title">AI智能面试宝典</h1>
-      <p class="reset-subtitle">重置您的密码</p>
-      <p class="reset-description">请输入您的新密码</p>
+      <h1 class="reset-title">{{ t('auth.forgot.resetTitle') }}</h1>
+      <p class="reset-subtitle">{{ t('auth.forgot.resetSubtitle') }}</p>
+      <p class="reset-description">{{ t('auth.forgot.resetDesc') }}</p>
       
       <div class="reset-form">
         <!-- 新密码输入框 -->
         <div class="form-group">
-          <label for="newPassword" class="form-label">新密码</label>
+          <label for="newPassword" class="form-label">{{ t('auth.forgot.newPasswordLabel') }}</label>
           <input 
             type="password" 
             id="newPassword" 
             v-model="newPassword" 
             class="form-input" 
-            placeholder="请输入新密码" 
+            :placeholder="t('auth.forgot.newPasswordPlaceholder')" 
             required
             @input="checkPasswordStrength"
           />
@@ -32,13 +32,13 @@
         
         <!-- 确认密码输入框 -->
         <div class="form-group">
-          <label for="confirmPassword" class="form-label">确认密码</label>
+          <label for="confirmPassword" class="form-label">{{ t('auth.forgot.confirmPasswordLabel') }}</label>
           <input 
             type="password" 
             id="confirmPassword" 
             v-model="confirmPassword" 
             class="form-input" 
-            placeholder="请再次输入新密码" 
+            :placeholder="t('auth.forgot.confirmPasswordPlaceholder')"
             required
             @input="checkPasswordMatch"
           />
@@ -52,12 +52,12 @@
           :disabled="isLoading || !isFormValid"
         >
           <span v-if="isLoading" class="loading-spinner"></span>
-          {{ isLoading ? '重置中...' : '重置密码' }}
+          {{ isLoading ? t('auth.forgot.resetting') : t('auth.forgot.resetBtn') }}
         </button>
         
         <!-- 返回登录链接 -->
         <div class="reset-footer">
-          <p>重置成功后？<button class="login-link" @click="handleLogin">返回登录</button></p>
+          <p>{{ t('auth.forgot.successReset') }}<button class="login-link" @click="handleLogin">{{ t('auth.forgot.loginLink') }}</button></p>
         </div>
       </div>
     </div>
@@ -75,11 +75,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import apiClient from '@/utils/api.js'
 import ErrorMessage from '@/components/ErrorMessage.vue'
 
 const router = useRouter()
 const route = useRoute()
+const { t } = useI18n()
 const newPassword = ref('')
 const confirmPassword = ref('')
 const isLoading = ref(false)
@@ -112,7 +114,7 @@ onMounted(() => {
   
   // 如果没有token或email，显示错误信息，用户点击确定后跳转到登录页面
   if (!token.value || !email.value) {
-    showErrorMessage('无效的重置链接', '错误', () => {
+    showErrorMessage(t('auth.forgot.error.invalidLink'), t('auth.login.error.failed'), () => {
       router.push('/login')
     })
   }
@@ -143,7 +145,7 @@ const closeError = () => {
 const checkPasswordStrength = () => {
   const passwordValue = newPassword.value
   if (!passwordValue.trim()) {
-    passwordError.value = '请输入密码'
+    passwordError.value = t('auth.register.error.passwordRequired')
     passwordStrength.value = 0
   } else {
     // 密码强度规则：至少8位，包含大小写字母、数字和特殊符号
@@ -170,31 +172,31 @@ const checkPasswordStrength = () => {
     switch (strength) {
       case 0:
       case 1:
-        passwordStrengthText.value = '弱'
+        passwordStrengthText.value = t('auth.register.passwordStrength.weak')
         passwordStrengthClass.value = 'weak'
         passwordStrengthWidth.value = '20%'
-        passwordError.value = '密码强度太弱'
+        passwordError.value = t('auth.register.passwordStrength.msg.tooWeak')
         break
       case 2:
-        passwordStrengthText.value = '中'
+        passwordStrengthText.value = t('auth.register.passwordStrength.medium')
         passwordStrengthClass.value = 'medium'
         passwordStrengthWidth.value = '40%'
-        passwordError.value = '密码强度一般'
+        passwordError.value = t('auth.register.passwordStrength.msg.general')
         break
       case 3:
-        passwordStrengthText.value = '强'
+        passwordStrengthText.value = t('auth.register.passwordStrength.strong')
         passwordStrengthClass.value = 'strong'
         passwordStrengthWidth.value = '60%'
         passwordError.value = ''
         break
       case 4:
-        passwordStrengthText.value = '很强'
+        passwordStrengthText.value = t('auth.register.passwordStrength.veryStrong')
         passwordStrengthClass.value = 'very-strong'
         passwordStrengthWidth.value = '80%'
         passwordError.value = ''
         break
       case 5:
-        passwordStrengthText.value = '极强'
+        passwordStrengthText.value = t('auth.register.passwordStrength.extremelyStrong')
         passwordStrengthClass.value = 'extremely-strong'
         passwordStrengthWidth.value = '100%'
         passwordError.value = ''
@@ -206,12 +208,12 @@ const checkPasswordStrength = () => {
 // 检查密码是否匹配
 const checkPasswordMatch = () => {
   if (!confirmPassword.value.trim()) {
-    confirmError.value = '请确认密码'
+    confirmError.value = t('auth.forgot.error.confirm')
     return
   }
   
   if (confirmPassword.value !== newPassword.value) {
-    confirmError.value = '两次输入的密码不一致'
+    confirmError.value = t('auth.forgot.error.mismatch')
   } else {
     confirmError.value = ''
   }
@@ -232,7 +234,7 @@ const isFormValid = computed(() => {
 // 处理密码重置
 const handleResetPassword = async () => {
   if (!isFormValid.value) {
-    showErrorMessage('请输入有效的密码', '验证失败')
+    showErrorMessage(t('auth.forgot.error.invalid'), t('auth.login.error.failed'))
     return
   }
   
@@ -246,15 +248,15 @@ const handleResetPassword = async () => {
     })
     
     // 重置成功，显示提示信息，用户点击确定后跳转到登录页面
-    showErrorMessage('密码重置成功，请登录', '重置成功', () => {
+    showErrorMessage(t('auth.forgot.successReset'), '重置成功', () => {
       router.push('/login')
     })
   } catch (error) {
     console.error('重置密码失败:', error)
     if (error.response?.data?.error) {
-      showErrorMessage(error.response.data.error, '重置失败')
+      showErrorMessage(error.response.data.error, t('auth.login.error.failed'))
     } else {
-      showErrorMessage('重置密码失败，请重试', '重置失败')
+      showErrorMessage(t('auth.forgot.error.invalidLink'), t('auth.login.error.failed'))
     }
   } finally {
     isLoading.value = false

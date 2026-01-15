@@ -4,6 +4,7 @@ from ..services.deepseek_service import client
 from ..services.file_service import get_resume_content
 from ..models import db, User, QuestionBank
 from ..utils.jwt_utils import auth_required
+from ..utils.messages import get_message
 import uuid
 
 # 创建蓝图
@@ -17,6 +18,7 @@ def generate():
     count = data.get('count', 10)  # 默认生成10个问题
     topic = data.get('topic', '')
     user_id = data.get('userId') or str(uuid.uuid4())
+    locale = request.headers.get('X-Locale', 'zh')
     
     # 根据userId获取最新的resumeId
     resume_id = '1'  # 默认值
@@ -141,7 +143,7 @@ def generate():
         end_idx = cleaned_response.rfind('}') + 1
         if start_idx == -1 or end_idx <= start_idx:
             print(f"无法找到有效的JSON结构: {cleaned_response}")
-            return jsonify({"error": "API返回格式错误，无法解析JSON"}), 500
+            return jsonify({"error": get_message('generate_failed', locale, error="Invalid JSON format")}), 500
         
         json_content = cleaned_response[start_idx:end_idx]
         
@@ -154,7 +156,7 @@ def generate():
         except json.JSONDecodeError as e:
             print(f"JSON解析错误: {e}")
             print(f"原始JSON内容: {json_content}")
-            return jsonify({"error": "API返回格式错误，无法解析JSON"}), 500
+            return jsonify({"error": get_message('generate_failed', locale, error="Failed to parse JSON")}), 500
         
         # 保存到数据库
         try:
@@ -196,7 +198,7 @@ def generate():
         
     except Exception as e:
         print(f"生成题库失败: {e}")
-        return jsonify({"error": "生成题库失败，请重试"}), 500
+        return jsonify({"error": get_message('generate_failed', locale, error=str(e))}), 500
 
 @bp.route('/get', methods=['POST'])
 @auth_required
@@ -207,18 +209,19 @@ def get_question_bank():
     user_id = request.user_id
     resume_id = data.get('resumeId')  # 允许为空
     count = data.get('count')  # 新增：获取题目数量筛选条件
+    locale = request.headers.get('X-Locale', 'zh')
     
     # 打印请求参数
     print(f"[API LOG] /api/question-bank/get - Request received: userId={user_id}, resumeId={resume_id}, count={count}")
     
     if not user_id:
-        return jsonify({"error": "Missing userId"}), 400
+        return jsonify({"error": get_message('missing_params', locale)}), 400
     
     try:
         # 查询用户
         user = User.query.filter_by(user_id=user_id).first()
         if not user:
-            return jsonify({"error": "User not found"}), 404
+            return jsonify({"error": get_message('user_not_found', locale)}), 404
         
         # 查询题库数据
         filters = {"user_id": user_id}
@@ -245,4 +248,4 @@ def get_question_bank():
         return jsonify(result), 200
     except Exception as e:
         print(f"查询题库失败: {e}")
-        return jsonify({"error": "Failed to get question bank"}), 500
+        return jsonify({"error": get_message('get_question_bank_failed', locale)}), 500

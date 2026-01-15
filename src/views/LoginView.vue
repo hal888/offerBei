@@ -1,19 +1,19 @@
 <template>
   <div class="login-container">
     <div class="login-card">
-      <h1 class="login-title">Offer贝，面试必备</h1>
-      <p class="login-subtitle">AI 赋能，让 Offer 更近一步</p>
+      <h1 class="login-title">{{ t('auth.login.title') }}</h1>
+      <p class="login-subtitle">{{ t('auth.login.subtitle') }}</p>
       
       <div class="login-form">
         <!-- 邮箱输入框 -->
         <div class="form-group">
-          <label for="email" class="form-label">邮箱</label>
+          <label for="email" class="form-label">{{ t('auth.login.emailLabel') }}</label>
           <input 
             type="email" 
             id="email" 
             v-model="email" 
             class="form-input" 
-            placeholder="请输入您的邮箱" 
+            :placeholder="t('auth.login.emailPlaceholder')" 
             required
             @keyup.enter="handleLogin"
           />
@@ -22,12 +22,12 @@
         <!-- 密码输入框 -->
         <div class="form-group">
           <div class="password-label-container">
-            <label for="password" class="form-label">密码</label>
+            <label for="password" class="form-label">{{ t('auth.login.passwordLabel') }}</label>
             <button 
               class="forgot-password-link" 
               @click="handleForgotPassword"
             >
-              忘记密码？
+              {{ t('auth.login.forgotPassword') }}
             </button>
           </div>
           <input 
@@ -35,7 +35,7 @@
             id="password" 
             v-model="password" 
             class="form-input" 
-            placeholder="请输入您的密码" 
+            :placeholder="t('auth.login.passwordPlaceholder')" 
             required
             @keyup.enter="handleLogin"
           />
@@ -49,7 +49,7 @@
               v-model="rememberMe" 
               class="remember-me-checkbox"
             />
-            <span class="remember-me-text">记住我</span>
+            <span class="remember-me-text">{{ t('auth.login.rememberMe') }}</span>
           </label>
         </div>
         
@@ -60,12 +60,12 @@
           :disabled="isLoading || !isFormValid"
         >
           <span v-if="isLoading" class="loading-spinner"></span>
-          {{ isLoading ? '登录中...' : '登录' }}
+          {{ isLoading ? t('auth.login.loggingIn') : t('auth.login.loginBtn') }}
         </button>
         
         <!-- 注册链接 -->
         <div class="login-footer">
-          <p>还没有账号？<button class="register-link" @click="handleRegister">立即注册</button></p>
+          <p>{{ t('auth.login.noAccount') }}<button class="register-link" @click="handleRegister">{{ t('auth.login.registerLink') }}</button></p>
         </div>
       </div>
     </div>
@@ -83,11 +83,13 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import apiClient from '@/utils/api.js'
 import ErrorMessage from '@/components/ErrorMessage.vue'
 import { trackEvent } from '@/utils/analytics'
 
 const router = useRouter()
+const { t } = useI18n()
 const email = ref('')
 const password = ref('')
 const rememberMe = ref(false)
@@ -96,7 +98,7 @@ const isLoading = ref(false)
 // 错误提示相关
 const showError = ref(false)
 const errorMessage = ref('')
-const errorTitle = ref('提示')
+const errorTitle = ref(t('auth.login.error.failed') || '提示')
 
 // 表单验证
 const isFormValid = computed(() => {
@@ -126,7 +128,7 @@ const closeError = () => {
 // 处理登录
 const handleLogin = async () => {
   if (!isFormValid.value) {
-    showErrorMessage('请输入有效的邮箱和密码', '登录失败')
+    showErrorMessage(t('auth.login.error.invalid'), t('auth.login.error.failed'))
     return
   }
   
@@ -155,17 +157,11 @@ const handleLogin = async () => {
       sessionStorage.setItem('email', response.data.email)
     }
 
-    //打印userId
-    // console.log('userId:', response.data.userId)
-    // //打印localStorage的userId
-    // console.log('localStorage_userID:', localStorage.getItem('userId'))
-    //  console.log('sessionStorage_userID:', sessionStorage.getItem('userId'))
-    
     // 登录成功后跳转到首页或之前的页面
     router.push('/')
   } catch (error) {
     console.error('登录失败:', error)
-    showErrorMessage(error.response?.data?.error || '登录失败，请重试', '登录失败')
+    showErrorMessage(error.response?.data?.error || t('auth.login.error.failed'), t('auth.login.error.failed'))
   } finally {
     isLoading.value = false
   }

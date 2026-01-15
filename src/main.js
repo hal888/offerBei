@@ -61,6 +61,9 @@ if (import.meta.env.DEV) {
   });
 }
 
+import i18n from './i18n'
+
+app.use(i18n) // i18n must be registered before router for meta title translation
 app.use(router)
 
 // 监控应用挂载时间

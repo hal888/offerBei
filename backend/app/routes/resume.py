@@ -5,6 +5,7 @@ from ..services.deepseek_service import analyze_resume
 from ..utils.json_parser import parse_resume_result
 from ..models import db, User, Resume
 from ..utils.jwt_utils import auth_required
+from ..utils.messages import get_message
 import uuid
 
 # 创建蓝图
@@ -16,16 +17,17 @@ def analyze():
     """简历分析API"""
     # 从认证中间件获取user_id
     user_id = request.user_id
+    locale = request.headers.get('X-Locale', 'zh')
     # 打印请求参数user_id
     print(f"[API LOG] /api/resume/analyze - Request received: user_id={user_id}, files={[f.filename for f in request.files.values()]}, form_data={dict(request.form)}")
     
     # 检查是否有文件上传
     if 'file' not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
+        return jsonify({"error": get_message('file_required', locale)}), 400
     
     file = request.files['file']
     if file.filename == '':
-        return jsonify({"error": "No file selected"}), 400
+        return jsonify({"error": get_message('file_empty', locale)}), 400
     
     
     
@@ -123,12 +125,13 @@ def get_resume():
     resume_id = data.get('resumeId')
     # 从request对象中获取用户ID，这是auth_required装饰器设置的
     user_id = request.user_id
+    locale = request.headers.get('X-Locale', 'zh')
     
     # 打印请求参数
     print(f"[API LOG] /api/resume/get - Request received: userId={user_id}, resumeId={resume_id}")
     
     if not user_id:
-        return jsonify({"error": "Missing userId"}), 400
+        return jsonify({"error": get_message('user_not_found', locale)}), 400
     
     try:
         # 查询用户
@@ -145,7 +148,19 @@ def get_resume():
             resume = Resume.query.filter_by(user_id=user_id).order_by(Resume.updated_at.desc()).first()
         
         if not resume:
-            return jsonify({"error": "Resume not found"}), 404
+            # Resume not found usually means user hasn't uploaded one yet
+            # In English: "Resume not found" or "Please upload resume first" depending on context,
+            # but here "Resume not found" is accurate.
+            # Using 'analysis_failed' key might not be appropriate, let's use a generic error or add new one.
+            # Adding 'resume_not_found' to messages would be better, but for now I'll use 'analysis_failed' with a custom error message if needed, or better yet, reuse 'user_not_found' logic or just return 404 with standard message?
+            # Actually, the implementation plan said to use get_message.
+            # I will assume 'resume_not_found' or similar, but I didn't add it to messages.py.
+            # The existing code returned "Resume not found".
+            # I will use 'analyzing_failed' with "Resume not found" as error, or simply return empty result?
+            # Front end likely expects 404.
+            # Let's check messages.py again.
+            # I have 'resume_required': 'Please upload resume first'. This is close.
+            return jsonify({"error": get_message('resume_required', locale)}), 404
         
         # 构造返回结果
         result = {
@@ -161,4 +176,4 @@ def get_resume():
         return jsonify(result), 200
     except Exception as e:
         print(f"查询简历失败: {e}")
-        return jsonify({"error": "Failed to get resume"}), 500
+        return jsonify({"error": get_message('analysis_failed', locale, error="Failed to get resume")}), 500

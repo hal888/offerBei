@@ -15,6 +15,9 @@ apiClient.interceptors.request.use(
       // 添加Authorization头
       config.headers.Authorization = `Bearer ${token}`
     }
+    // 添加语言头
+    const locale = localStorage.getItem('user-locale') || 'zh'
+    config.headers['X-Locale'] = locale
     return config
   },
   error => {

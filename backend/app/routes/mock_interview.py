@@ -6,9 +6,27 @@ from ..services.deepseek_service import client
 from ..services.file_service import get_resume_content
 from ..models import db, User, MockInterview
 from ..utils.jwt_utils import auth_required
+from ..utils.messages import get_message
 
 # 创建蓝图
 bp = Blueprint('mock_interview', __name__, url_prefix='/api/mock-interview')
+
+def normalize_interviewer_style(style):
+    """
+    将任何语言的面试官风格名称规范化为中文（数据库存储格式）
+    """
+    style_map = {
+        # 中文
+        '温柔HR': '温柔HR',
+        '严厉技术总监': '严厉技术总监',
+        '综合面试官': '综合面试官',
+        # 英文
+        'Gentle HR': '温柔HR',
+        'Strict Technical Director': '严厉技术总监',
+        'Balanced Interviewer': '综合面试官'
+    }
+    return style_map.get(style, style)
+
 
 # 保存面试会话的字典（生产环境中应使用数据库）
 interview_sessions = {}
@@ -21,8 +39,12 @@ def start():
     style = data.get('style', '温柔HR')
     mode = data.get('mode', '文字模式')
     duration = data.get('duration', 15)
+    
+    # 规范化面试官风格（支持多语言）
+    style = normalize_interviewer_style(style)
     # 从request对象中获取用户ID，这是auth_required装饰器设置的
     user_id = request.user_id
+    locale = request.headers.get('X-Locale', 'zh')
     
     # 打印请求参数
     print(f"[API LOG] /api/mock-interview/start - Request received: style={style}, mode={mode}, duration={duration}, userId={user_id}")
@@ -100,7 +122,8 @@ def start():
                 "content": first_question['content'],
                 "type": first_question['type']
             },
-            "tips": ["保持微笑，展现自信", "回答问题时保持逻辑清晰", "注意控制语速，避免过快或过慢"]
+            "tips": ["保持微笑，展现自信", "回答问题时保持逻辑清晰", "注意控制语速，避免过快或过慢"],
+            "message": get_message('interview_started', locale)
         }), 200
         
     except Exception as e:
@@ -131,7 +154,8 @@ def start():
                 "content": first_question['content'],
                 "type": first_question['type']
             },
-            "tips": ["保持微笑，展现自信", "回答问题时保持逻辑清晰", "注意控制语速，避免过快或过慢"]
+            "tips": ["保持微笑，展现自信", "回答问题时保持逻辑清晰", "注意控制语速，避免过快或过慢"],
+            "message": get_message('interview_started', locale)
         }), 200
 
 @bp.route('/answer', methods=['POST'])
@@ -142,13 +166,14 @@ def answer():
     interview_id = data.get('interviewId')
     question_id = data.get('questionId')
     answer = data.get('answer')
+    locale = request.headers.get('X-Locale', 'zh')
     
     # 打印请求参数
     print(f"[API LOG] /api/mock-interview/answer - Request received: interviewId={interview_id}, questionId={question_id}, answer={answer[:50]}...")
     
     # 检查会话是否存在
     if interview_id not in interview_sessions:
-        return jsonify({"error": "面试会话不存在"}), 404
+        return jsonify({"error": get_message('interview_not_found', locale)}), 404
     
     session = interview_sessions[interview_id]
     
@@ -197,7 +222,7 @@ def answer():
     except Exception as e:
         print(f"生成反馈和下一个问题失败: {e}")
         
-        return jsonify(result), 200
+        return jsonify({"error": get_message('answer_failed', locale, error=str(e))}), 500
 
 @bp.route('/end', methods=['POST'])
 @auth_required
@@ -207,13 +232,14 @@ def end():
     interview_id = data.get('interviewId')
     # 从request对象中获取用户ID，这是auth_required装饰器设置的
     user_id = request.user_id
+    locale = request.headers.get('X-Locale', 'zh')
     
     # 打印请求参数
     print(f"[API LOG] /api/mock-interview/end - Request received: interviewId={interview_id}, userId={user_id}")
     
     # 检查会话是否存在
     if interview_id not in interview_sessions:
-        return jsonify({"error": "面试会话不存在"}), 404
+        return jsonify({"error": get_message('interview_not_found', locale)}), 404
     
     session = interview_sessions[interview_id]
     
@@ -270,12 +296,13 @@ def end():
         # 删除会话信息
         del interview_sessions[interview_id]
         
-        return jsonify(report), 200
+        return jsonify({"error": get_message('end_failed', locale, error=str(e))}), 500
 
 @bp.route('/voice-answer', methods=['POST'])
 @auth_required
 def voice_answer():
     """语音回答API，处理用户语音输入"""
+    locale = request.headers.get('X-Locale', 'zh')
     try:
         # 获取请求数据
         interview_id = request.form.get('interviewId')
@@ -287,7 +314,7 @@ def voice_answer():
         
         # 检查会话是否存在
         if interview_id not in interview_sessions:
-            return jsonify({"error": "面试会话不存在"}), 404
+            return jsonify({"error": get_message('interview_not_found', locale)}), 404
         
         # 保存音频文件到临时目录
         import os
@@ -364,7 +391,7 @@ def voice_answer():
             
     except Exception as e:
         print(f"语音回答处理失败: {e}")
-        return jsonify({"error": "语音回答处理失败"}), 500
+        return jsonify({"error": get_message('speech_failed', locale, error=str(e))}), 500
 
 @bp.route('/history', methods=['GET'])
 @auth_required
@@ -375,9 +402,15 @@ def get_history():
     style = request.args.get('style')
     mode = request.args.get('mode')
     duration = request.args.get('duration')
+    locale = request.headers.get('X-Locale', 'zh')
     
     # 打印请求参数
     print(f"[API LOG] /api/mock-interview/history - Request received: userId={user_id}, style={style}, mode={mode}, duration={duration}")
+    
+    # 规范化面试官风格（支持多语言）
+    if style:
+        style = normalize_interviewer_style(style)
+        print(f"[API LOG] Normalized style: {style}")
     
     if not user_id:
         return jsonify({"error": "Missing userId"}), 400
@@ -386,7 +419,7 @@ def get_history():
         # 获取用户
         user = User.query.filter_by(user_id=user_id).first()
         if not user:
-            return jsonify({"error": "User not found"}), 404
+            return jsonify({"error": get_message('user_not_found', locale)}), 404
         
         # 构建查询
         query = MockInterview.query.filter_by(user_id=user_id)
@@ -429,6 +462,7 @@ def get_history():
 @auth_required
 def save_report():
     """保存模拟面试报告API"""
+    locale = request.headers.get('X-Locale', 'zh')
     try:
         # 获取请求数据
         data = request.get_json()
@@ -439,13 +473,18 @@ def save_report():
         style = data.get('style')
         mode = data.get('mode')
         duration = data.get('duration')
+        
+        # 规范化面试官风格（支持多语言）
+        if style:
+            style = normalize_interviewer_style(style)
+
         resume_id = data.get('resumeId', 'default_resume')
         
         # 打印请求参数
         print(f"[API LOG] /api/mock-interview/save-report - Request received: userId={user_id}, interviewId={interview_id}, style={style}, mode={mode}, duration={duration}")
         
         if not user_id or not report_data:
-            return jsonify({"error": "Missing required parameters"}), 400
+            return jsonify({"error": get_message('missing_params', locale)}), 400
 
         
         # 创建MockInterview记录
@@ -469,6 +508,7 @@ def save_report():
 @auth_required
 def realtime_voice():
     """实时语音识别API，处理1秒音频分片"""
+    locale = request.headers.get('X-Locale', 'zh')
     try:
         interview_id = request.form.get('interviewId')
         question_id = request.form.get('questionId')
@@ -478,7 +518,7 @@ def realtime_voice():
         print(f"[API LOG] /api/mock-interview/realtime-voice - Received chunk {chunk_index} for interview {interview_id}, question {question_id}")
         
         if not interview_id or not audio_file:
-            return jsonify({"error": "缺少必要参数"}), 400
+            return jsonify({"error": get_message('missing_params', locale)}), 400
         
         # 保存音频文件到临时目录
         import os
@@ -519,7 +559,7 @@ def realtime_voice():
             # 返回错误信息
             return jsonify({
                 'chunkIndex': chunk_index,
-                'error': f'音频转录失败: {str(transcribe_error)}',
+                'error': get_message('speech_failed', locale, error=str(transcribe_error)),
                 'status': 'error'
             }), 500
         

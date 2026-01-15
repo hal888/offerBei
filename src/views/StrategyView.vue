@@ -1,14 +1,14 @@
 <template>
   <div class="strategy-container">
     <div class="strategy-header">
-      <h1>面试策略锦囊</h1>
+      <h1>{{ $t('pages.strategy.title') }}</h1>
       <button 
         class="export-btn" 
         @click="exportStrategy" 
         :disabled="!analysisResult && generatedQuestions.length === 0"
       >
         <span class="btn-icon">📄</span>
-        导出PDF
+        {{ $t('pages.strategy.export') }}
       </button>
     </div>
     
@@ -23,11 +23,11 @@
     <div class="export-content" ref="exportContent">
       <div class="strategy-section">
         <div class="strategy-card">
-          <h2>画像分析</h2>
+          <h2>{{ $t('pages.strategy.tabs.analysis') }}</h2>
           
           <div class="strategy-content">
             <div v-if="analysisResult" class="analysis-result">
-              <h3>分析结果</h3>
+              <h3>{{ $t('pages.strategy.analysis.result') }}</h3>
               <div class="result-content">
                 <div class="result-section" v-for="(section, index) in analysisResult.sections" :key="index">
                   <h4>{{ section.title }}</h4>
@@ -47,11 +47,11 @@
 
       <div class="strategy-section">
         <div class="strategy-card">
-          <h2>反问环节</h2>
+          <h2>{{ $t('pages.strategy.tabs.questions') }}</h2>
           
           <div class="strategy-content">
             <div v-if="generatedQuestions.length > 0" class="questions-result">
-              <h3>生成的问题</h3>
+              <h3>{{ $t('pages.strategy.questions.generated') }}</h3>
               <div class="questions-list">
                 <div 
                   v-for="(question, index) in generatedQuestions" 
@@ -64,7 +64,7 @@
                   </div>
                   <div class="question-type-tag">{{ question.type }}</div>
                   <div class="question-explanation">
-                    <h5>提问意图</h5>
+                    <h5>{{ $t('pages.strategy.questions.intent') }}</h5>
                     <p>{{ question.explanation }}</p>
                   </div>
                 </div>
@@ -79,50 +79,50 @@
     <div class="form-content">
       <div class="strategy-section">
         <div class="strategy-card">
-          <h2>画像分析</h2>
+          <h3>{{ $t('pages.strategy.analysis.title') }}</h3>
           
           <div class="strategy-content">
             <div class="analysis-options">
               <div class="option-group">
-                <label>输入你的背景信息</label>
+                <label>{{ $t('pages.strategy.analysis.backgroundInfo.label') }}</label>
                 <textarea 
                   v-model="backgroundInfo" 
-                  placeholder="请输入你的职业、工作年限、最近经历、目标岗位等信息，帮助AI生成更精准的策略..."
+                  :placeholder="$t('pages.strategy.analysis.backgroundInfo.placeholder')"
                   rows="5"
                 ></textarea>
               </div>
 
               <div class="option-group">
-                <label>选择需要优化的方向</label>
+                <label>{{ $t('pages.strategy.analysis.optimizationDirections.label') }}</label>
                 <div class="direction-options">
                   <label class="direction-checkbox">
                     <input type="checkbox" v-model="selectedDirections" value="空窗期分析" />
-                    <span class="checkbox-label">空窗期分析和应对策略</span>
+                    <span class="checkbox-label">{{ $t('pages.strategy.analysis.optimizationDirections.gapPeriod') }}</span>
                   </label>
                   <label class="direction-checkbox">
                     <input type="checkbox" v-model="selectedDirections" value="转行背景" />
-                    <span class="checkbox-label">转行背景的优势转化</span>
+                    <span class="checkbox-label">{{ $t('pages.strategy.analysis.optimizationDirections.careerChange') }}</span>
                   </label>
                   <label class="direction-checkbox">
                     <input type="checkbox" v-model="selectedDirections" value="经验不足" />
-                    <span class="checkbox-label">经验不足的补充方案</span>
+                    <span class="checkbox-label">{{ $t('pages.strategy.analysis.optimizationDirections.lackOfExperience') }}</span>
                   </label>
                   <label class="direction-checkbox">
                     <input type="checkbox" v-model="selectedDirections" value="防御性话术" />
-                    <span class="checkbox-label">防御性话术准备</span>
+                    <span class="checkbox-label">{{ $t('pages.strategy.analysis.optimizationDirections.defensiveLanguage') }}</span>
                   </label>
                 </div>
               </div>
 
               <button class="analyze-btn" @click="generateAnalysis">
                 <span class="btn-icon">🔍</span>
-                生成画像分析
+                {{ $t('pages.strategy.analysis.generateButton') }}
               </button>
             </div>
 
             <!-- 结果展示部分 -->
             <div v-if="analysisResult" class="analysis-result">
-              <h3>分析结果</h3>
+              <h3>{{ $t('pages.strategy.analysis.result') }}</h3>
               <div class="result-content">
                 <div class="result-section" v-for="(section, index) in analysisResult.sections" :key="index">
                   <h4>{{ section.title }}</h4>
@@ -142,59 +142,58 @@
 
       <div class="strategy-section">
         <div class="strategy-card">
-          <h2>反问环节</h2>
+          <h3>{{ $t('pages.strategy.questions.title') }}</h3>
           
           <div class="strategy-content">
             <div class="question-generation">
               <div class="option-group">
-                <label>输入目标公司和岗位信息</label>
+                <label>{{ $t('pages.strategy.questions.companyPosition.label') }}</label>
                 <div class="company-inputs">
                   <input 
                     type="text" 
                     v-model="companyInfo.companyName" 
-                    placeholder="公司名称"
+                    :placeholder="$t('pages.strategy.questions.companyPosition.companyNamePlaceholder')"
                     class="company-input"
                   />
                   <input 
                     type="text" 
                     v-model="companyInfo.position" 
-                    placeholder="岗位名称"
+                    :placeholder="$t('pages.strategy.questions.companyPosition.positionPlaceholder')"
                     class="company-input"
                   />
                 </div>
               </div>
 
               <div class="option-group">
-                <label>选择问题类型</label>
+                <label>{{ $t('pages.strategy.questions.questionTypes.label') }}</label>
                 <div class="question-types">
                   <label class="type-checkbox">
                     <input type="checkbox" v-model="selectedQuestionTypes" value="公司发展类" />
-                    <span class="checkbox-label">公司发展类</span>
+                    <span class="checkbox-label">{{ $t('pages.strategy.questions.questionTypes.companyDevelopment') }}</span>
                   </label>
                   <label class="type-checkbox">
                     <input type="checkbox" v-model="selectedQuestionTypes" value="团队文化类" />
-                    <span class="checkbox-label">团队文化类</span>
+                    <span class="checkbox-label">{{ $t('pages.strategy.questions.questionTypes.teamCulture') }}</span>
                   </label>
                   <label class="type-checkbox">
                     <input type="checkbox" v-model="selectedQuestionTypes" value="岗位发展类" />
-                    <span class="checkbox-label">岗位发展类</span>
+                    <span class="checkbox-label">{{ $t('pages.strategy.questions.questionTypes.roleResponsibilities') }}</span>
                   </label>
                   <label class="type-checkbox">
-                    <input type="checkbox" v-model="selectedQuestionTypes" value="工作内容类" />
-                    <span class="checkbox-label">工作内容类</span>
+                    <span class="checkbox-label">{{ $t('pages.strategy.questions.questionTypes.developmentOpportunities') }}</span>
                   </label>
                 </div>
               </div>
 
               <button class="generate-questions-btn" @click="generateQuestions">
                 <span class="btn-icon">✨</span>
-                生成高质量问题
+                {{ $t('pages.strategy.questions.generateButton') }}
               </button>
             </div>
 
             <!-- 结果展示部分 -->
             <div v-if="generatedQuestions.length > 0" class="questions-result">
-              <h3>生成的问题</h3>
+              <h3>{{ $t('pages.strategy.questions.generated') }}</h3>
               <div class="questions-list">
                 <div 
                   v-for="(question, index) in generatedQuestions" 
@@ -207,7 +206,7 @@
                   </div>
                   <div class="question-type-tag">{{ question.type }}</div>
                   <div class="question-explanation">
-                    <h5>提问意图</h5>
+                    <h5>{{ $t('pages.strategy.questions.intent') }}</h5>
                     <p>{{ question.explanation }}</p>
                   </div>
                 </div>
@@ -231,6 +230,7 @@
 <script setup>
 import { ref, onMounted, onActivated } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import ErrorMessage from '@/components/ErrorMessage.vue'
 import apiClient from '@/utils/api.js'
 import jsPDF from 'jspdf'
@@ -238,6 +238,7 @@ import html2canvas from 'html2canvas'
 import { trackEvent } from '@/utils/analytics'
 
 const router = useRouter()
+const { t } = useI18n()
 
 // 错误提示相关
 const showError = ref(false)
@@ -247,7 +248,7 @@ const errorTitle = ref('提示')
 const errorCloseCallback = ref(null)
 
 // 显示错误信息
-const showErrorMessage = (message, title = '提示', callback = null) => {
+const showErrorMessage = (message, title = t('alerts.title'), callback = null) => {
   errorMessage.value = message
   errorTitle.value = title
   errorCloseCallback.value = callback
@@ -258,7 +259,7 @@ const showErrorMessage = (message, title = '提示', callback = null) => {
 const closeError = () => {
   showError.value = false
   errorMessage.value = ''
-  errorTitle.value = '提示'
+  errorTitle.value = t('alerts.title')
   // 执行回调函数
   if (errorCloseCallback.value) {
     const callback = errorCloseCallback.value
@@ -284,7 +285,7 @@ const exportContent = ref(null)
 const generateAnalysis = () => {
   isAnalyzing.value = true
   isLoading.value = true
-  loadingMessage.value = '正在生成画像分析，请稍候...'
+  loadingMessage.value = t('loading.generatingAnalysis')
   
   const userId = getUserId()
   
@@ -301,15 +302,15 @@ const generateAnalysis = () => {
     console.error('生成画像分析失败:', error)
     if (error.isUnauthorized) {
       // 401错误，显示请先登录提示，点击确定后跳转到登录页
-      showErrorMessage('请先登录', '提示', () => {
+      showErrorMessage(t('alerts.loginRequired'), t('alerts.title'), () => {
         router.push('/login')
       })
     } else if (error.response && error.response.data.error === 'User not found') {
-      showErrorMessage('请先上传简历进行优化，然后再生成画像分析', '提示', () => {
+      showErrorMessage(t('alerts.uploadResumeFirst'), t('alerts.title'), () => {
         router.push('/resume')
       })
     } else {
-      showErrorMessage('生成画像分析失败，请重试', '失败')
+      showErrorMessage(t('alerts.generateAnalysisFailed'), t('alerts.title'))
     }
   })
   .finally(() => {
@@ -321,7 +322,7 @@ const generateAnalysis = () => {
 const generateQuestions = () => {
   isGeneratingQuestions.value = true
   isLoading.value = true
-  loadingMessage.value = '正在生成高质量反问问题，请稍候...'
+  loadingMessage.value = t('loading.generatingQuestions')
   
   const userId = getUserId()
   
@@ -346,15 +347,15 @@ const generateQuestions = () => {
     console.error('生成问题失败:', error)
     if (error.isUnauthorized) {
       // 401错误，显示请先登录提示，点击确定后跳转到登录页
-      showErrorMessage('请先登录', '提示', () => {
+      showErrorMessage(t('alerts.loginRequired'), t('alerts.title'), () => {
         router.push('/login')
       })
     } else if (error.response && error.response.data.error === 'User not found') {
-      showErrorMessage('请先上传简历进行优化，然后再生成高质量反问问题', '提示', () => {
+      showErrorMessage(t('alerts.uploadResumeFirst'), t('alerts.title'), () => {
         router.push('/resume')
       })
     } else {
-      showErrorMessage('生成问题失败，请重试', '失败')
+      showErrorMessage(t('alerts.generateQuestionFailed'), t('alerts.title'))
     }
   })
   .finally(() => {
@@ -390,11 +391,11 @@ const fetchAnalysisHistory = async () => {
     console.error('获取画像分析历史失败:', error)
     if (error.isUnauthorized) {
       // 401错误，显示请先登录提示，点击确定后跳转到登录页
-      showErrorMessage('请先登录', '提示', () => {
+      showErrorMessage(t('alerts.loginRequired'), t('alerts.title'), () => {
         router.push('/login')
       })
     } else if (error.response && error.response.data.error === 'User not found') {
-      showErrorMessage('请先上传简历进行优化，然后再使用面试策略功能', '提示', () => {
+      showErrorMessage(t('alerts.uploadResumeFirst'), t('alerts.title'), () => {
         router.push('/resume')
       })
     }
@@ -425,11 +426,11 @@ const fetchQuestionsHistory = async () => {
     console.error('获取反问问题历史失败:', error)
     if (error.isUnauthorized) {
       // 401错误，显示请先登录提示，点击确定后跳转到登录页
-      showErrorMessage('请先登录', '提示', () => {
+      showErrorMessage(t('alerts.loginRequired'), t('alerts.title'), () => {
         router.push('/login')
       })
     } else if (error.response && error.response.data.error === 'User not found') {
-      showErrorMessage('请先上传简历进行优化，然后再使用面试策略功能', '提示', () => {
+      showErrorMessage(t('alerts.uploadResumeFirst'), t('alerts.title'), () => {
         router.push('/resume')
       })
     }
@@ -462,7 +463,7 @@ onActivated(async () => {
 const exportStrategy = async () => {
   try {
     isLoading.value = true
-    loadingMessage.value = '正在生成PDF报告...'
+    loadingMessage.value = t('loading.generatingPdf')
     
     // 准备导出内容容器
     const tempExportContainer = document.createElement('div')
@@ -746,7 +747,7 @@ const exportStrategy = async () => {
     pdf.save('面试策略锦囊.pdf')
   } catch (error) {
     console.error('导出PDF失败:', error)
-    showErrorMessage('导出PDF失败，请重试', '失败')
+    showErrorMessage(t('alerts.exportPdfFailed'), t('alerts.title'))
   } finally {
     isLoading.value = false
   }
