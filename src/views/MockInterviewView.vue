@@ -426,7 +426,11 @@ const startInterviewProcess = async () => {
     messages.value = [
       {
         sender: 'ai',
-        text: `您好！我是今天的面试官，我们将进行一场${selectedDuration.value}分钟的${selectedStyle.value}风格面试。现在开始我们的面试，首先请您回答：${data.currentQuestion.content}`,
+        text: t('pages.mockInterview.chat.openingGreeting', { 
+          duration: selectedDuration.value, 
+          style: selectedStyle.value, 
+          question: data.currentQuestion.content 
+        }),
         time: getCurrentTime()
       }
     ]
@@ -548,7 +552,10 @@ const sendMessage = () => {
     // 添加AI消息
     messages.value.push({
       sender: 'ai',
-      text: `感谢您的回答。${data.feedback} 接下来请您回答：${data.nextQuestion.content}`,
+      text: t('pages.mockInterview.chat.feedbackTemplate', { 
+        feedback: data.feedback, 
+        nextQuestion: data.nextQuestion.content 
+      }),
       time: getCurrentTime()
     })
     
@@ -958,7 +965,7 @@ const startRecording = async () => {
         if (chunks.length === 0 || chunks.every(chunk => chunk.size < 100)) {
           console.log('[DEBUG] 录音内容为空，跳过处理')
           recordingStatus.value = 'completed'
-          realTimeTips.value.push('✅ 录音已完成（无内容）')
+          realTimeTips.value.push(t('pages.mockInterview.chat.tips.recordingCompletedNoContent'))
           return
         }
         
@@ -991,7 +998,7 @@ const startRecording = async () => {
         recordingStatus.value = 'completed'
       } catch (error) {
         console.error('处理音频数据失败:', error)
-        realTimeTips.value.push('音频处理失败: ' + error.message)
+        realTimeTips.value.push(t('pages.mockInterview.chat.tips.audioProcessingFailed', { error: error.message }))
         // 出错时也设置为completed状态
         recordingStatus.value = 'completed'
       }
@@ -1002,7 +1009,7 @@ const startRecording = async () => {
     
     console.log('录音已开始')
     recordingStatus.value = 'recording'
-    realTimeTips.value.push('🎤 录音中...')
+    realTimeTips.value.push(t('pages.mockInterview.chat.tips.recording'))
     
     // 保存MediaRecorder实例，用于停止录音
     window.currentMediaRecorder = mediaRecorder
@@ -1050,7 +1057,7 @@ const stopRecording = () => {
   }
   
   recordingStatus.value = 'completed'
-  realTimeTips.value.push('✅ 录音已完成')
+  realTimeTips.value.push(t('pages.mockInterview.chat.tips.recordingCompleted'))
   
   // 1秒后恢复空闲状态
   setTimeout(() => {
@@ -1097,9 +1104,9 @@ onMounted(async () => {
     // 权限相关的错误会在 startRecording 函数中处理
     if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
       console.log('用户拒绝了麦克风权限，但浏览器仍然支持录音功能')
-      realTimeTips.value.push('麦克风权限未授予，点击录音按钮时会再次请求权限')
+      realTimeTips.value.push(t('pages.mockInterview.chat.tips.micPermissionNotGranted'))
     } else {
-      realTimeTips.value.push('麦克风初始化提示：首次录音时会请求权限')
+      realTimeTips.value.push(t('pages.mockInterview.chat.tips.micInitHint'))
     }
   }
 })
@@ -1128,7 +1135,7 @@ const toggleRecording = async () => {
     console.log('开始录音...')
     isRecording.value = true
     recordingStatus.value = 'starting'
-    realTimeTips.value.push('📤 正在准备录音...')
+    realTimeTips.value.push(t('pages.mockInterview.chat.tips.preparing'))
     await startRecording()
   }
 }

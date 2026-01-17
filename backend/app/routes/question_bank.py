@@ -6,9 +6,78 @@ from ..models import db, User, QuestionBank
 from ..utils.jwt_utils import auth_required
 from ..utils.messages import get_message
 import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from ..utils.prompt_templates import get_system_prompt, get_user_prompt
 
 # 创建蓝图
 bp = Blueprint('question_bank', __name__, url_prefix='/api/question-bank')
+
+def _generate_single_batch(client, resume_content, topic, batch_count, locale='zh'):
+    """
+    生成单批题目的辅助函数
+    
+    Args:
+        client: DeepSeek客户端
+        resume_content: 简历内容
+        topic: 自定义话题
+        batch_count: 本批生成数量
+        locale: 语言设置 ('zh' 或 'en')
+        
+    Returns:
+        list: 问题列表，失败返回空列表
+    """
+    import json
+    import re
+    
+    # 使用prompt模板系统生成locale-aware的prompt
+    user_prompt = get_user_prompt(
+        'question_bank',
+        locale,
+        'user_template',
+        count=batch_count,
+        resume_content=resume_content,
+        custom_topic=topic if topic else ""
+    )
+    
+    system_prompt = get_system_prompt('question_bank', locale)
+    
+    # 计算max_tokens
+    max_tokens = min(int((500 + 600 * batch_count) * 1.2), 8192)
+    
+    try:
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.7,
+            max_tokens=max_tokens
+        )
+        
+        api_result = response.choices[0].message.content
+        
+        # 清理JSON
+        cleaned = api_result
+        if cleaned.startswith('```json') or cleaned.startswith('```'):
+            cleaned = cleaned.split('\n', 1)[1]
+        if cleaned.endswith('```'):
+            cleaned = cleaned.rsplit('\n', 1)[0]
+        
+        start_idx = cleaned.find('{')
+        end_idx = cleaned.rfind('}') + 1
+        if start_idx == -1 or end_idx <= start_idx:
+            return []
+        
+        json_content = cleaned[start_idx:end_idx]
+        json_content = re.sub(r'[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]', '', json_content)
+        
+        result = json.loads(json_content)
+        return result.get("questions", [])
+        
+    except Exception as e:
+        print(f"批次生成失败: {e}")
+        return []
 
 @bp.route('/generate', methods=['POST'])
 @auth_required
@@ -105,100 +174,94 @@ def generate():
         ```
         """
     
-    try:
-        response = client.chat.completions.create(
-            model="deepseek-chat",
-            messages=[
-                {"role": "system", "content": "你是一位专业的面试问题生成专家，擅长根据候选人的简历内容生成相关的面试问题"},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=8192
-        )
+    # 判断是否需要分批生成
+    all_questions = []
+    
+    if count > 15:
+        # 大量题目，并发分批生成（每批10题）
+        batch_size = 10
+        num_batches = (count + batch_size - 1) // batch_size
+        print(f"[DEBUG] 题目数量{count}，分{num_batches}批并发生成，每批{batch_size}题")
         
-        # 解析API返回结果
-        api_result = response.choices[0].message.content
+        # 准备所有批次的参数
+        batch_tasks = []
+        for batch_idx in range(num_batches):
+            remaining = count - len(batch_tasks) * batch_size
+            current_batch_size = min(batch_size, remaining)
+            batch_tasks.append((batch_idx, current_batch_size, num_batches))
         
-        # 保存原始响应到文件，便于调试
-        # with open('question_bank_response.txt', 'w', encoding='utf-8') as f:
-        #     f.write(api_result)
-        
-        # 解析JSON响应
-        import json
-        import re
-        
-        # 清理Markdown代码块和额外内容
-        cleaned_response = api_result
-        
-        # 移除Markdown代码块标记
-        if cleaned_response.startswith('```json') or cleaned_response.startswith('```'):
-            # 找到第一个换行后的内容
-            cleaned_response = cleaned_response.split('\n', 1)[1]
-        if cleaned_response.endswith('```'):
-            # 找到最后一个换行前的内容
-            cleaned_response = cleaned_response.rsplit('\n', 1)[0]
-        
-        # 清理可能的额外内容，只保留JSON部分
-        start_idx = cleaned_response.find('{')
-        end_idx = cleaned_response.rfind('}') + 1
-        if start_idx == -1 or end_idx <= start_idx:
-            print(f"无法找到有效的JSON结构: {cleaned_response}")
-            return jsonify({"error": get_message('generate_failed', locale, error="Invalid JSON format")}), 500
-        
-        json_content = cleaned_response[start_idx:end_idx]
-        
-        # 清理无效控制字符
-        json_content = re.sub(r'[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]', '', json_content)
-        
-        # 尝试解析JSON
-        try:
-            result = json.loads(json_content)
-        except json.JSONDecodeError as e:
-            print(f"JSON解析错误: {e}")
-            print(f"原始JSON内容: {json_content}")
-            return jsonify({"error": get_message('generate_failed', locale, error="Failed to parse JSON")}), 500
-        
-        # 保存到数据库
-        try:
-            # 查询或创建用户
-            user = User.query.filter_by(user_id=user_id).first()
-            if not user:
-                user = User(user_id=user_id)
-                db.session.add(user)
-                db.session.commit()  # 立即提交，获取user_id
+        # 使用线程池并发执行所有批次
+        with ThreadPoolExecutor(max_workers=min(num_batches, 5)) as executor:
+            # 提交所有批次任务
+            future_to_batch = {
+                executor.submit(_generate_single_batch, client, resume_content, topic, task[1], locale): task[0]
+                for task in batch_tasks
+            }
             
-            # 创建题库记录
-            question_bank = QuestionBank(
-                user_id=user_id,
-                resume_id=resume_id,
-                count=count,
-                questions=result.get("questions", [])
-            )
-            db.session.add(question_bank)
-            db.session.commit()
-        except Exception as e:
-            print(f"保存题库到数据库失败: {e}")
-            db.session.rollback()
+            # 收集结果
+            for future in as_completed(future_to_batch):
+                batch_idx = future_to_batch[future]
+                try:
+                    batch_questions = future.result()
+                    all_questions.extend(batch_questions)
+                    print(f"[DEBUG] 批次{batch_idx + 1}完成: {len(batch_questions)}题")
+                except Exception as e:
+                    print(f"[DEBUG] 批次{batch_idx + 1}失败: {e}")
         
-        # 获取生成的问题列表
-        questions_list = result.get("questions", [])
+        if not all_questions:
+            return jsonify({"error": get_message('generate_failed', locale, error="All batches failed")}), 500
         
-        # 添加调试日志
-        print(f"[DEBUG] 成功生成题库: 问题数量={len(questions_list)}")
-        print(f"[DEBUG] 返回响应结构: questions数量={len(questions_list)}, total={len(questions_list)}, topic={topic}, userId={user_id}")
+        result = {"questions": all_questions}
+        print(f"[DEBUG] 并发生成完成，共{len(all_questions)}题")
         
-        response_data = {
-            "questions": questions_list,
-            "total": len(questions_list),  # 从实际问题数量计算，而不是依赖LLM返回的total字段
-            "topic": topic,
-            "userId": user_id  # 返回user_id，前端保存到localStorage
-        }
+    else:
+        # 少量题目，单次生成
+        print(f"[DEBUG] 单次生成{count}题")
+        questions = _generate_single_batch(client, resume_content, topic, count, locale)
         
-        return jsonify(response_data), 200
+        if not questions:
+            return jsonify({"error": get_message('generate_failed', locale, error="Generation failed")}), 500
         
+        result = {"questions": questions}
+    
+    # 保存到数据库
+    try:
+        # 查询或创建用户
+        user = User.query.filter_by(user_id=user_id).first()
+        if not user:
+            user = User(user_id=user_id)
+            db.session.add(user)
+            db.session.commit()  # 立即提交，获取user_id
+        
+        # 创建题库记录
+        question_bank = QuestionBank(
+            user_id=user_id,
+            resume_id=resume_id,
+            count=count,
+            questions=result.get("questions", [])
+        )
+        db.session.add(question_bank)
+        db.session.commit()
     except Exception as e:
-        print(f"生成题库失败: {e}")
-        return jsonify({"error": get_message('generate_failed', locale, error=str(e))}), 500
+        print(f"保存题库到数据库失败: {e}")
+        db.session.rollback()
+    
+    # 获取生成的问题列表
+    questions_list = result.get("questions", [])
+    
+    # 添加调试日志
+    print(f"[DEBUG] 成功生成题库: 问题数量={len(questions_list)}")
+    print(f"[DEBUG] 返回响应结构: questions数量={len(questions_list)}, total={len(questions_list)}, topic={topic}, userId={user_id}")
+    
+    response_data = {
+        "questions": questions_list,
+        "total": len(questions_list),  # 从实际问题数量计算，而不是依赖LLM返回的total字段
+        "topic": topic,
+        "userId": user_id  # 返回user_id，前端保存到localStorage
+    }
+    
+    return jsonify(response_data), 200
+    
 
 @bp.route('/get', methods=['POST'])
 @auth_required

@@ -58,7 +58,7 @@ def analyze():
     #     return jsonify({"error": "无法读取文件内容"}), 400
     
     # 调用DeepSeek API进行简历分析
-    api_result = analyze_resume(file_content)
+    api_result = analyze_resume(file_content, locale)
     
     # 解析API返回结果
     parsed_result = parse_resume_result(api_result)

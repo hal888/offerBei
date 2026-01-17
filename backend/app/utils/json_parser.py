@@ -54,9 +54,6 @@ def parse_resume_result(content):
         # 移除多余的换行符和空格
         json_content = ' '.join(json_content.split())
         
-        # 确保所有字符串使用双引号
-        json_content = json_content.replace("'", '"')
-        
         # 3. 修复常见JSON格式问题
         # 修复尾随逗号（在}或]之前的逗号）
         json_content = re.sub(r',\s*([}\]])', r' \1', json_content)
@@ -64,6 +61,22 @@ def parse_resume_result(content):
         # 移除JSON中的注释（如果有）
         json_content = re.sub(r'//.*?(?=\\n|$)', '', json_content)
         json_content = re.sub(r'/\*.*?\*/', '', json_content, flags=re.DOTALL)
+        
+        # 修复嵌套引号问题 - 使用更简单安全的方法
+        # 策略1: 替换常见的英文示例中的嵌套引号 (e.g., "xxx") -> (e.g., 'xxx')
+        json_content = re.sub(r'\(e\.g\.,?\s*"([^"]{1,100})"', r"(e.g., '\1'", json_content)
+        json_content = re.sub(r'\(i\.e\.,?\s*"([^"]{1,100})"', r"(i.e., '\1'", json_content)
+        
+        # 策略2: 替换 "xxx" 这种在描述中的引用 -> 'xxx'
+        # 匹配模式: 单词后跟空格和引号开始的短语
+        json_content = re.sub(r'(\w)\s+"([^"]{1,50})"\s*([,\.\)])', r"\1 '\2'\3", json_content)
+        
+        # 策略3: 修复英文所有格撇号被写成双引号的问题 (candidate"s -> candidate's)
+        json_content = re.sub(r'(\w)"s\b', r"\1's", json_content)
+        json_content = re.sub(r'(\w)"t\b', r"\1't", json_content)  # don"t -> don't
+        json_content = re.sub(r'(\w)"re\b', r"\1're", json_content)  # you"re -> you're
+        json_content = re.sub(r'(\w)"ll\b', r"\1'll", json_content)  # you"ll -> you'll
+        json_content = re.sub(r'(\w)"ve\b', r"\1've", json_content)  # you"ve -> you've
         
         # 移除可能的控制字符，但保留Unicode字符
         json_content = re.sub(r'[\x00-\x1f\x7f]', '', json_content)  # 只移除控制字符
@@ -88,7 +101,10 @@ def parse_resume_result(content):
         
         # 提取诊断意见
         if 'diagnosis' in json_result and isinstance(json_result['diagnosis'], list):
-            valid_types = ['警告', '错误', '建议']
+            # 支持中英文诊断类型
+            valid_types_zh = ['警告', '错误', '建议']
+            valid_types_en = ['warning', 'error', 'suggestion']
+            valid_types = valid_types_zh + valid_types_en
             for item in json_result['diagnosis']:
                 if isinstance(item, dict) and \
                    all(k in item for k in ['type', 'title', 'description']) and \

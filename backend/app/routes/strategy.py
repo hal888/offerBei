@@ -1,10 +1,12 @@
 from flask import Blueprint, request, jsonify
-import json
 from ..services.deepseek_service import client
 from ..services.file_service import get_resume_content
 from ..models import db, User, InterviewStrategy
 from ..utils.jwt_utils import auth_required
 from ..utils.messages import get_message
+from ..utils.prompt_templates import get_system_prompt, get_user_prompt
+import json
+import uuid
 
 # 创建蓝图
 bp = Blueprint('strategy', __name__, url_prefix='/api/strategy')
@@ -12,10 +14,11 @@ bp = Blueprint('strategy', __name__, url_prefix='/api/strategy')
 @bp.route('/analysis', methods=['POST'])
 @auth_required
 def analysis():
-    """生成画像分析API"""
+    """生成面试策略及画像分析API"""
     data = request.get_json()
     background_info = data.get('backgroundInfo', '')
     directions = data.get('directions', [])
+    # 从request对象中获取用户ID，这是auth_required装饰器设置的
     user_id = request.user_id
     locale = request.headers.get('X-Locale', 'zh')
     
@@ -34,20 +37,27 @@ def analysis():
         print(f"获取用户最新简历失败: {e}")
     
     # 打印请求参数
-    print(f"[API LOG] /api/strategy/analysis - Request received: backgroundInfo={background_info[:50]}..., directions={directions}, resumeId={resume_id}, userId={user_id}")
+    print(f"[API LOG] /api/strategy/analysis - Request received: userId={user_id}, resumeId={resume_id}, backgroundInfo={background_info[:50]}...")
     
     # 获取简历内容
     resume_content = get_resume_content(resume_id, 'optimized')
     
-    # 构建prompt生成画像分析（使用字符串连接避免格式说明符问题）
-    prompt = "你是一位专业的面试策略分析师，正在为候选人生成面试策略。请基于以下信息：\n\n1. 简历内容：" + resume_content + "\n2. 用户背景信息：" + background_info + "\n3. 优化方向：" + str(directions) + "\n\n请生成一份详细的画像分析报告，要求：\n\n1. 报告结构清晰，包含多个章节\n2. 每个章节包含：标题、内容描述和实用建议\n3. 针对用户的优化方向提供具体的策略建议\n4. 语言通俗易懂，具有可操作性\n\n输出格式要求：\n{\"sections\": [{\"title\": \"章节标题\", \"content\": \"章节内容\", \"tips\": [\"建议1\", \"建议2\"]}]}\n\n只输出JSON格式，不要包含任何额外的文字或解释。"
+    # 构建用户Prompt
+    user_prompt = get_user_prompt(
+        'strategy',
+        locale,
+        'analysis_template',
+        resume_content=resume_content,
+        background_info=background_info,
+        directions=json.dumps(directions) if directions else "（无具体方向）"
+    )
     
     try:
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=[
-                {"role": "system", "content": "你是一位专业的面试策略分析师，擅长为候选人提供个性化的面试策略建议"},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": get_system_prompt('strategy', locale, 'analysis_system')},
+                {"role": "user", "content": user_prompt}
             ],
             temperature=0.7,
             max_tokens=8192
@@ -248,15 +258,23 @@ def questions():
     # 获取简历内容
     resume_content = get_resume_content(resume_id, 'optimized')
     
-    # 构建prompt生成反问问题（使用字符串连接避免格式说明符问题）
-    prompt = "你是一位专业的面试策略顾问，正在为候选人生成高质量的反问问题。请基于以下信息：\n\n1. 简历内容：" + resume_content + "\n2. 目标公司：" + company_name + "\n3. 目标岗位：" + position + "\n4. 问题类型：" + str(question_types) + "\n\n请生成5-8个高质量的反问问题，要求：\n\n1. 问题要有深度，能体现候选人对公司和岗位的了解\n2. 问题类型多样，涵盖公司发展、团队文化、岗位发展、工作内容等\n3. 每个问题要包含提问意图，说明为什么要问这个问题\n4. 问题要适合在面试的反问环节提出\n\n输出格式要求：\n{\"questions\": [{\"content\": \"问题内容\", \"type\": \"问题类型\", \"explanation\": \"提问意图\"}]}\n\n只输出JSON格式，不要包含任何额外的文字或解释。"
+    # 构建用户Prompt
+    user_prompt = get_user_prompt(
+        'strategy',
+        locale,
+        'questions_template',
+        company=company_name,
+        position=position,
+        question_types=str(question_types),
+        resume_content=resume_content
+    )
     
     try:
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=[
-                {"role": "system", "content": "你是一位专业的面试策略顾问，擅长为候选人生成高质量的反问问题"},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": get_system_prompt('strategy', locale, 'questions_system')},
+                {"role": "user", "content": user_prompt}
             ],
             temperature=0.7,
             max_tokens=8192
@@ -413,6 +431,7 @@ def get_questions_history():
     """获取用户的反问问题历史记录API"""
     # 从request对象中获取用户ID，这是auth_required装饰器设置的
     user_id = request.user_id
+    locale = request.headers.get('X-Locale', 'zh')
     
     # 打印请求参数
     print(f"[API LOG] /api/strategy/questions/history - Request received: userId={user_id}")

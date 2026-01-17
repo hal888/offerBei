@@ -1,34 +1,51 @@
 from flask import Blueprint, request, jsonify
-import random
-import uuid
-import json
+import os
 from ..services.deepseek_service import client
 from ..services.file_service import get_resume_content
-from ..models import db, User, MockInterview
+from ..models import db, User, MockInterview, Resume
 from ..utils.jwt_utils import auth_required
 from ..utils.messages import get_message
+from ..utils.prompt_templates import get_system_prompt, get_user_prompt
+import uuid
 
 # 创建蓝图
 bp = Blueprint('mock_interview', __name__, url_prefix='/api/mock-interview')
 
 def normalize_interviewer_style(style):
     """
-    将任何语言的面试官风格名称规范化为中文（数据库存储格式）
+    将任何语言的面试官风格规范化为中文（数据库存储格式）
     """
     style_map = {
         # 中文
         '温柔HR': '温柔HR',
-        '严厉技术总监': '严厉技术总监',
-        '综合面试官': '综合面试官',
+        '严厉技术官': '严厉技术官',
+        '专业架构师': '专业架构师',
+        'CTO': 'CTO',
         # 英文
         'Gentle HR': '温柔HR',
-        'Strict Technical Director': '严厉技术总监',
-        'Balanced Interviewer': '综合面试官'
+        'Strict Tech Lead': '严厉技术官',
+        'Professional Architect': '专业架构师',
+        'CTO': 'CTO',
     }
     return style_map.get(style, style)
 
+def get_localized_interviewer_style(style, locale):
+    """
+    将标准化的中文面试官风格转换为对应语言（用于DeepSeek API）
+    """
+    if locale == 'en':
+        style_map_en = {
+            '温柔HR': 'Gentle HR',
+            '严厉技术官': 'Strict Tech Lead',
+            '专业架构师': 'Professional Architect',
+            'CTO': 'CTO',
+        }
+        return style_map_en.get(style, style)
+    else:
+        # 中文保持原样
+        return style
 
-# 保存面试会话的字典（生产环境中应使用数据库）
+# 内存中存储面试会话状态 (实际生产环境应使用Redis)
 interview_sessions = {}
 
 @bp.route('/start', methods=['POST'])
@@ -36,48 +53,73 @@ interview_sessions = {}
 def start():
     """开始模拟面试API"""
     data = request.get_json()
-    style = data.get('style', '温柔HR')
-    mode = data.get('mode', '文字模式')
-    duration = data.get('duration', 15)
-    
-    # 规范化面试官风格（支持多语言）
-    style = normalize_interviewer_style(style)
     # 从request对象中获取用户ID，这是auth_required装饰器设置的
     user_id = request.user_id
+    resume_id = data.get('resumeId')  # 允许为空，如果为空则尝试获取用户最新的简历
+    style = data.get('style', '温柔HR')
+    mode = data.get('mode', 'chat')
+    duration = data.get('duration', 15)
     locale = request.headers.get('X-Locale', 'zh')
     
     # 打印请求参数
-    print(f"[API LOG] /api/mock-interview/start - Request received: style={style}, mode={mode}, duration={duration}, userId={user_id}")
+    print(f"[API LOG] /api/mock-interview/start - Request received: userId={user_id}, style={style}, mode={mode}, duration={duration}")
     
-    # 根据userId获取最新的resumeId
-    resume_id = '1'  # 默认值
+    if not user_id:
+        return jsonify({"error": get_message('missing_params', locale)}), 400
+    
+    # 规范化面试官风格（支持多语言，存储为标准中文格式）
+    style = normalize_interviewer_style(style)
+    print(f"[API LOG] Normalized style: {style}")
+
+    # 获取简历ID（如果未提供）
     try:
-        user = User.query.filter_by(user_id=user_id).first()
-        if user:
-            # 获取用户最新的简历
-            from app.models import Resume
-            latest_resume = Resume.query.filter_by(user_id=user_id).order_by(Resume.updated_at.desc()).first()
-            if latest_resume:
-                resume_id = latest_resume.resume_id
-                print(f"[API LOG] 使用用户最新的简历ID: {resume_id}")
+        if not resume_id:
+            user = User.query.filter_by(user_id=user_id).first()
+            if user:
+                # 获取用户最新的简历
+                latest_resume = Resume.query.filter_by(user_id=user_id).order_by(Resume.updated_at.desc()).first()
+                if latest_resume:
+                    resume_id = latest_resume.resume_id
+                    print(f"[API LOG] 使用用户最新的简历ID: {resume_id}")
     except Exception as e:
         print(f"获取用户最新简历失败: {e}")
     
     # 获取简历内容
     resume_content = get_resume_content(resume_id, 'optimized')
+    if not resume_content:
+        # 如果没有内容，使用缺省提示
+        resume_content = "（未提供简历内容）"
     
     # 生成interviewId
     interview_id = f"interview_{uuid.uuid4().hex[:8]}"
     
-    # 构建prompt生成第一个问题（使用字符串连接避免格式说明符问题）
-    prompt = "你是一位" + style + "风格的面试官，正在为候选人进行面试。请基于以下简历内容，生成第一个面试问题，要求：\n\n1. 问题类型：高频必问题（如自我介绍、求职动机等）\n2. 问题要与候选人的简历背景相关\n3. 语言风格符合" + style + "特点\n4. 仅输出JSON格式，包含id、content、type字段\n5. 不要包含任何额外的文字或解释\n\n简历内容：\n" + resume_content
+    # 获取本地化的风格名称，用于生成Prompt
+    localized_style = get_localized_interviewer_style(style, locale)
+    
+    # 构建用户Prompt
+    user_prompt = get_user_prompt(
+        'mock_interview',
+        locale,
+        'start_interview',
+        style=localized_style,
+        resume_content=resume_content
+    )
+    
+    # 获取系统Prompt
+    system_prompt_template = get_system_prompt('mock_interview', locale, 'interviewer_system')
+    # 填充系统Prompt中的变量
+    system_prompt = system_prompt_template.format(
+        style=localized_style,
+        duration=duration,
+        resume_content=resume_content
+    )
     
     try:
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=[
-                {"role": "system", "content": "你是一位" + style + "风格的专业面试官"},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
             ],
             temperature=0.7,
             max_tokens=8192
@@ -92,16 +134,24 @@ def start():
         # 清理可能的额外内容，只保留JSON部分
         start_idx = api_result.find('{')
         end_idx = api_result.rfind('}') + 1
-        if start_idx == -1 or end_idx <= start_idx:
-            # 如果解析失败，使用默认问题
-            first_question = {"id": 1, "content": "请介绍一下你自己", "type": "高频必问题"}
-        else:
-            json_content = api_result[start_idx:end_idx]
-            first_question = json.loads(json_content)
+        
+        first_question = {"id": 1, "content": "请介绍一下你自己", "type": "高频必问题"}
+        
+        if start_idx != -1 and end_idx > start_idx:
+            try:
+                json_content = api_result[start_idx:end_idx]
+                parsed_question = json.loads(json_content)
+                if 'content' in parsed_question:
+                    first_question = parsed_question
+                    # 确保包含必要字段
+                    if 'id' not in first_question: first_question['id'] = 1
+                    if 'type' not in first_question: first_question['type'] = "高频必问题"
+            except Exception as parse_error:
+                print(f"JSON解析错误: {parse_error}")
         
         # 保存会话信息
         interview_sessions[interview_id] = {
-            "style": style,
+            "style": style, # 存储标准中文风格
             "mode": mode,
             "duration": duration,
             "resume_id": resume_id,
@@ -120,9 +170,17 @@ def start():
             "currentQuestion": {
                 "id": first_question['id'],
                 "content": first_question['content'],
-                "type": first_question['type']
+                "type": first_question.get('type', '高频必问题')
             },
-            "tips": ["保持微笑，展现自信", "回答问题时保持逻辑清晰", "注意控制语速，避免过快或过慢"],
+            "tips": [
+                "保持微笑，展现自信",
+                "回答问题时保持逻辑清晰",
+                "注意控制语速，避免过快或过慢"
+            ] if locale == 'zh' else [
+                "Keep smiling and show confidence",
+                "Maintain logical clarity when answering",
+                "Control your speaking pace, avoid too fast or too slow"
+            ],
             "message": get_message('interview_started', locale)
         }), 200
         
@@ -154,7 +212,15 @@ def start():
                 "content": first_question['content'],
                 "type": first_question['type']
             },
-            "tips": ["保持微笑，展现自信", "回答问题时保持逻辑清晰", "注意控制语速，避免过快或过慢"],
+            "tips": [
+                "保持微笑，展现自信",
+                "回答问题时保持逻辑清晰",
+                "注意控制语速，避免过快或过慢"
+            ] if locale == 'zh' else [
+                "Keep smiling and show confidence",
+                "Maintain logical clarity when answering",
+                "Control your speaking pace, avoid too fast or too slow"
+            ],
             "message": get_message('interview_started', locale)
         }), 200
 
@@ -178,22 +244,42 @@ def answer():
     session = interview_sessions[interview_id]
     
     # 保存当前问题和回答
+    current_question_text = session["conversation_history"][-1] if session["conversation_history"] else "请介绍一下你自己"
     session["question_answers"].append({
         "question_id": question_id,
-        "question": session["conversation_history"][-1] if session["conversation_history"] else "请介绍一下你自己",
+        "question": current_question_text,
         "answer": answer
     })
     
-    # 构建prompt生成反馈和下一个问题（使用字符串连接避免格式说明符问题）
-    current_question = session["conversation_history"][-1] if session["conversation_history"] else "请介绍一下你自己"
-    prompt = "你是一位" + session['style'] + "风格的面试官，正在为候选人进行面试。请基于以下信息：\n\n1. 简历内容：" + session['resume_content'] + "\n2. 对话历史：" + str(session['conversation_history']) + "\n3. 当前问题：" + current_question + "\n4. 候选人回答：" + answer + "\n\n请完成以下任务：\n\n1. 生成对当前回答的反馈，要求：\n   - 评价回答的质量、逻辑、深度\n   - 指出优点和不足\n   - 语言风格符合" + session['style'] + "\n\n2. 生成下一个面试问题，要求：\n   - 问题类型多样（简历深挖题、专业技能题、行为/情景题等）\n   - 与候选人的简历和对话历史相关\n   - 难度适中，符合面试流程\n\n输出格式要求：\n{\"feedback\": \"对当前回答的反馈\", \"nextQuestion\": {\"id\": 数字id, \"content\": \"下一个问题内容\", \"type\": \"问题类型\"}}\n\n只输出JSON格式，不要包含任何额外的文字或解释。"
+    # 获取本地化的风格名称
+    localized_style = get_localized_interviewer_style(session['style'], locale)
+    
+    # 构建用户Prompt
+    user_prompt = get_user_prompt(
+        'mock_interview',
+        locale,
+        'feedback_and_question',
+        style=localized_style,
+        resume_content=session['resume_content'],
+        conversation_history=str(session['conversation_history']),
+        current_question=current_question_text,
+        answer=answer
+    )
+    
+    # 获取系统Prompt
+    system_prompt_template = get_system_prompt('mock_interview', locale, 'interviewer_system')
+    system_prompt = system_prompt_template.format(
+        style=localized_style,
+        duration=session['duration'],
+        resume_content=session['resume_content']
+    )
     
     try:
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=[
-                {"role": "system", "content": "你是一位" + session['style'] + "风格的专业面试官"},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
             ],
             temperature=0.7,
             max_tokens=8192
@@ -208,10 +294,17 @@ def answer():
         # 清理可能的额外内容，只保留JSON部分
         start_idx = api_result.find('{')
         end_idx = api_result.rfind('}') + 1
-        if not (start_idx == -1 or end_idx <= start_idx):
+        
+        if start_idx != -1 and end_idx > start_idx:
             json_content = api_result[start_idx:end_idx]
             result = json.loads(json_content)
             result["nextQuestion"]["id"] = session["current_question_id"] + 1
+        else:
+             # Fallback
+             result = {
+                 "feedback": "...", 
+                 "nextQuestion": {"id": session["current_question_id"] + 1, "content": "请继续详细说明一下你的项目经验", "type": "追问"}
+             }
         
         # 更新会话信息
         session["current_question_id"] += 1
@@ -221,7 +314,6 @@ def answer():
         
     except Exception as e:
         print(f"生成反馈和下一个问题失败: {e}")
-        
         return jsonify({"error": get_message('answer_failed', locale, error=str(e))}), 500
 
 @bp.route('/end', methods=['POST'])
@@ -243,19 +335,40 @@ def end():
     
     session = interview_sessions[interview_id]
     
-    # 构建prompt生成面试报告（使用字符串连接避免格式说明符问题）
-    prompt = "你是一位专业的面试评估专家，正在为候选人生成面试报告。请基于以下信息：\n\n1. 简历内容：" + session['resume_content'] + "\n2. 面试风格：" + session['style'] + "\n3. 面试时长：" + str(session['duration']) + "分钟\n4. 问答记录：" + str(session['question_answers']) + "\n5. 对话历史：" + str(session['conversation_history']) + "\n\n请生成一份详细的面试报告，要求：\n\n1. 包含以下评分项（0-100分）：\n   - professionalScore：专业能力评分\n   - logicScore：逻辑表达评分\n   - confidenceScore：自信程度评分\n   - matchScore：岗位匹配度评分\n\n2. 逐题诊断，每个问题包含：\n   - question：问题内容\n   - answer：候选人回答\n   - feedback：对该回答的评价\n   - suggestion：改进建议\n\n3. 优化建议，包含至少4条针对性建议\n\n输出格式要求：\n{\"professionalScore\": 数字, \"logicScore\": 数字, \"confidenceScore\": 数字, \"matchScore\": 数字, \"questionAnalysis\": [{\"question\": \"问题内容\", \"answer\": \"候选人回答\", \"feedback\": \"评价\", \"suggestion\": \"改进建议\"}], \"optimizationSuggestions\": [\"建议1\", \"建议2\"]}\n\n只输出JSON格式，不要包含任何额外的文字或解释。"
+    # 获取本地化的风格名称
+    localized_style = get_localized_interviewer_style(session['style'], locale)
+    
+    # 构建用户Prompt
+    user_prompt = get_user_prompt(
+        'mock_interview',
+        locale,
+        'generate_report',
+        style=localized_style,
+        resume_content=session['resume_content'],
+        duration=session['duration'],
+        question_answers=str(session['question_answers']),
+        conversation_history=str(session['conversation_history'])
+    )
+    
+    # 这种情况下系统提示词可以更通用一点
+    system_prompt = get_system_prompt('mock_interview', locale, 'interviewer_system').format(
+        style=localized_style,
+        duration=session['duration'],
+        resume_content=session['resume_content']
+    )
     
     try:
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=[
-                {"role": "system", "content": "你是一位专业的面试评估专家"},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
             ],
             temperature=0.7,
             max_tokens=8192
         )
+        
+        import json
         
         # 解析API返回结果
         api_result = response.choices[0].message.content
@@ -263,9 +376,25 @@ def end():
         # 清理可能的额外内容，只保留JSON部分
         start_idx = api_result.find('{')
         end_idx = api_result.rfind('}') + 1
-        if not (start_idx == -1 or end_idx <= start_idx):
+        
+        report = {}
+        if start_idx != -1 and end_idx > start_idx:
             json_content = api_result[start_idx:end_idx]
-            report = json.loads(json_content)
+            try:
+                report = json.loads(json_content)
+            except:
+                print("Failed to parse report JSON")
+
+        if not report:
+             # Fallback dummy report if parsing fails
+             report =  {
+                "professionalScore": 80, 
+                "logicScore": 80, 
+                "confidenceScore": 80, 
+                "matchScore": 80,
+                "questionAnalysis": [], 
+                "optimizationSuggestions": ["多进行实战练习", "加强基础知识"]
+             }
         
         # 保存到数据库
         try:      
@@ -345,26 +474,48 @@ def voice_answer():
         session = interview_sessions[interview_id]
         
         # 保存当前问题和回答
-        current_question = session["conversation_history"][-1] if session["conversation_history"] else "请介绍一下你自己"
+        current_question_text = session["conversation_history"][-1] if session["conversation_history"] else "请介绍一下你自己"
         session["question_answers"].append({
             "question_id": question_id,
-            "question": current_question,
+            "question": current_question_text,
             "answer": transcribed_text
         })
         
-        # 构建prompt生成反馈和下一个问题（使用字符串连接避免格式说明符问题）
-        prompt = "你是一位" + session['style'] + "风格的面试官，正在为候选人进行面试。请基于以下信息：\n\n1. 简历内容：" + session['resume_content'] + "\n2. 对话历史：" + str(session['conversation_history']) + "\n3. 当前问题：" + current_question + "\n4. 候选人回答：" + transcribed_text + "\n\n请完成以下任务：\n\n1. 生成对当前回答的反馈，要求：\n   - 评价回答的质量、逻辑、深度\n   - 指出优点和不足\n   - 语言风格符合" + session['style'] + "\n\n2. 生成下一个面试问题，要求：\n   - 问题类型多样（简历深挖题、专业技能题、行为/情景题等）\n   - 与候选人的简历和对话历史相关\n   - 难度适中，符合面试流程\n\n输出格式要求：\n{\"feedback\": \"对当前回答的反馈\", \"nextQuestion\": {\"id\": 数字id, \"content\": \"下一个问题内容\", \"type\": \"问题类型\"}}\n\n只输出JSON格式，不要包含任何额外的文字或解释。"
+        # 获取本地化的风格名称
+        localized_style = get_localized_interviewer_style(session['style'], locale)
+        
+        # 构建用户Prompt
+        user_prompt = get_user_prompt(
+            'mock_interview',
+            locale,
+            'feedback_and_question',
+            style=localized_style,
+            resume_content=session['resume_content'],
+            conversation_history=str(session['conversation_history']),
+            current_question=current_question_text,
+            answer=transcribed_text
+        )
+        
+        # 获取系统Prompt
+        system_prompt_template = get_system_prompt('mock_interview', locale, 'interviewer_system')
+        system_prompt = system_prompt_template.format(
+            style=localized_style,
+            duration=session['duration'],
+            resume_content=session['resume_content']
+        )
         
         try:
             response = client.chat.completions.create(
                 model="deepseek-chat",
                 messages=[
-                    {"role": "system", "content": "你是一位" + session['style'] + "风格的专业面试官"},
-                    {"role": "user", "content": prompt}
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.7,
                 max_tokens=8192
             )
+            
+            import json
             
             # 解析API返回结果
             api_result = response.choices[0].message.content
@@ -372,11 +523,18 @@ def voice_answer():
             # 清理可能的额外内容，只保留JSON部分
             start_idx = api_result.find('{')
             end_idx = api_result.rfind('}') + 1
-            if not (start_idx == -1 or end_idx <= start_idx):
+            
+            if start_idx != -1 and end_idx > start_idx:
                 json_content = api_result[start_idx:end_idx]
                 result = json.loads(json_content)
                 result["nextQuestion"]["id"] = session["current_question_id"] + 1
                 result["transcribedText"] = transcribed_text
+            else:
+                 result = {
+                     "feedback": "...", 
+                     "nextQuestion": {"id": session["current_question_id"] + 1, "content": "请继续", "type": "追问"},
+                     "transcribedText": transcribed_text
+                 }
             
             # 更新会话信息
             session["current_question_id"] += 1
@@ -386,7 +544,11 @@ def voice_answer():
             
         except Exception as e:
             print(f"生成反馈和下一个问题失败: {e}")
-            
+            result = {
+                     "feedback": "Error generating next question", 
+                     "nextQuestion": {"id": session["current_question_id"] + 1, "content": "Please continue", "type": "Follow-up"},
+                     "transcribedText": transcribed_text
+            }
             return jsonify(result), 200
             
     except Exception as e:
@@ -439,6 +601,8 @@ def get_history():
         # 获取最新的一条记录
         mock_interview = query.order_by(MockInterview.created_at.desc()).first()
         
+        import json
+        
         # 转换为前端需要的格式
         history = []
         if mock_interview:
@@ -486,6 +650,7 @@ def save_report():
         if not user_id or not report_data:
             return jsonify({"error": get_message('missing_params', locale)}), 400
 
+        import json
         
         # 创建MockInterview记录
         mock_interview = MockInterview(
@@ -625,3 +790,22 @@ def transcribe_audio(audio_path, engine="whisper"):
                 engine = "whisper"       
     except Exception as e:
         print(f"语音识别失败: {e}")
+    
+    # 默认使用Faster Whisper (如果aliyun失败或指定了whisper)
+    try:
+        from faster_whisper import WhisperModel
+        
+        # 使用small模型，平衡速度和精度
+        model_size = "small"
+        
+        # 暂不使用GPU，避免某些环境配置问题
+        # model = WhisperModel(model_size, device="cuda", compute_type="float16")
+        model = WhisperModel(model_size, device="cpu", compute_type="int8")
+        
+        segments, info = model.transcribe(audio_path, beam_size=5)
+        
+        result_text = " ".join([segment.text for segment in segments])
+        return result_text.strip()
+    except Exception as e:
+        print(f"Faster Whisper识别失败: {e}")
+        return ""

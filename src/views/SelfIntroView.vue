@@ -60,7 +60,7 @@
         <div class="version-info">
           <span class="version-badge">{{ selectedVersion }}</span>
           <span class="style-badge">{{ selectedStyle }}</span>
-          <span class="time-estimate">{{ $t('pages.selfIntro.estimatedTime') }}: {{ estimatedTime }}分钟</span>
+          <span class="time-estimate">{{ $t('pages.selfIntro.estimatedTime') }}: {{ estimatedTime }} {{ $t('pages.selfIntro.timeUnit') }}</span>
         </div>
         <div class="result-actions">
           <button class="action-btn" @click="copyIntro">
@@ -497,7 +497,7 @@ const exportToPDF = () => {
     const timeInfo = document.createElement('div')
     // 确保获取到的是字符串值
     const timeValue = typeof estimatedTime === 'string' ? estimatedTime : estimatedTime.value || '0'
-    timeInfo.textContent = `预计朗读时间：${timeValue}分钟`
+    timeInfo.textContent = `${t('pages.selfIntro.estimatedReadingTime')}：${timeValue} ${t('pages.selfIntro.timeUnit')}`
     timeInfo.style.fontSize = '14px'
     
     infoContainer.appendChild(versionInfo)

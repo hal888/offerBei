@@ -103,7 +103,7 @@
             <div class="question-type-badge">{{ question.type }}</div>
           </div>
           <div class="question-content">
-            {{ question.content }}
+            {{ question.question || question.content }}
           </div>
           <div class="question-footer">
             <button class="expand-btn" @click="toggleAnswer(index)">
@@ -438,7 +438,7 @@ const exportQuestions = async () => {
 
       // 问题内容
       const questionContent = document.createElement('div')
-      questionContent.textContent = question.content
+      questionContent.textContent = question.question
       questionContent.style.fontSize = '16px'
       questionContent.style.lineHeight = '1.8'
       questionContent.style.marginBottom = '20px'

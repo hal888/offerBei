@@ -48,6 +48,29 @@ def normalize_version_style(version, style):
     
     return normalized_version, normalized_style
 
+def get_localized_version_style(version, style, locale):
+    """
+    将标准化的中文版本/风格转换为对应语言（用于DeepSeek API）
+    """
+    if locale == 'en':
+        # 版本映射到英文
+        version_map_en = {
+            '30秒电梯演讲版': '30s Elevator Pitch',
+            '1分钟版': '1 Minute Version',
+            '3分钟版': '3 Minute Version',
+        }
+        # 风格映射到英文
+        style_map_en = {
+            '正式': 'Formal',
+            '活泼': 'Casual',
+            '专业': 'Academic',
+            '亲切': 'Friendly',
+        }
+        return version_map_en.get(version, version), style_map_en.get(style, style)
+    else:
+        # 中文保持原样
+        return version, style
+
 
 @bp.route('/generate', methods=['POST'])
 @auth_required
@@ -96,9 +119,13 @@ def generate():
     if not resume_content:
         resume_content = user_info
     
+    # 将version和style转换为locale对应的语言（用于DeepSeek）
+    localized_version, localized_style = get_localized_version_style(version, style, locale)
+    print(f"[API LOG] Localized params for DeepSeek: version={localized_version}, style={localized_style}, locale={locale}")
+    
     # 调用DeepSeek API生成自我介绍
     try:
-        intro = generate_self_intro(resume_content, version, style)
+        intro = generate_self_intro(resume_content, localized_version, localized_style, locale)
         
         # 保存到数据库
         try:

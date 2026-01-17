@@ -164,7 +164,7 @@
                 <span class="loading-dot"></span>
                 <span class="loading-dot"></span>
               </div>
-              <span>加载最近文件中...</span>
+              <span>{{ $t('pages.resume.upload.loading') }}</span>
             </div>
             <div v-else-if="recentFilesError" class="recent-files-error">
               <span class="error-icon">⚠️</span>
@@ -172,7 +172,7 @@
             </div>
             <div v-else-if="recentFiles.length === 0" class="recent-files-empty">
               <span class="empty-icon">📁</span>
-              <span>暂无最近文件</span>
+              <span>{{ $t('pages.resume.upload.empty') }}</span>
             </div>
             <div v-else>
               <div v-for="item in recentFiles" :key="item.id" class="recent-file-item" @click="handleRecentFileClick(item)">
@@ -626,16 +626,16 @@ const formatTime = (ts) => {
 }
 
 const getScoreDescription = (score) => {
-  if (score >= 90) return '优秀的简历，具有很强的竞争力'
-  if (score >= 80) return '良好的简历，需要一些小的优化'
-  if (score >= 70) return '中等的简历，有改进空间'
-  if (score >= 60) return '基础的简历，需要较多优化'
-  return '较差的简历，建议重新撰写'
+  if (score >= 90) return t('pages.resume.scoreDescriptions.excellent')
+  if (score >= 80) return t('pages.resume.scoreDescriptions.good')
+  if (score >= 70) return t('pages.resume.scoreDescriptions.average')
+  if (score >= 60) return t('pages.resume.scoreDescriptions.basic')
+  return t('pages.resume.scoreDescriptions.poor')
 }
 
 const getKeywordType = (keyword) => {
   const techKeywords = ['JavaScript', 'Vue', 'React', 'Node.js', 'RESTful API', '数据库设计', '性能优化']
-  return techKeywords.includes(keyword) ? '技术关键词' : '软技能关键词'
+  return techKeywords.includes(keyword) ? t('pages.resume.keywordTypes.technical') : t('pages.resume.keywordTypes.softSkill')
 }
 
 // 格式化简历内容 - 使用ref而不是computed，支持异步初始化

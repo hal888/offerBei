@@ -456,6 +456,17 @@ export default {
             keyword: {
                 title: 'Keyword Optimization',
                 tip: 'Integrate these keywords naturally to improve ATS match rate'
+            },
+            scoreDescriptions: {
+                excellent: 'Excellent resume with strong competitiveness',
+                good: 'Good resume, needs minor optimization',
+                average: 'Average resume with room for improvement',
+                basic: 'Basic resume, needs significant optimization',
+                poor: 'Poor resume, recommend rewriting'
+            },
+            keywordTypes: {
+                technical: 'Technical Keyword',
+                softSkill: 'Soft Skill Keyword'
             }
         },
         selfIntro: {
@@ -509,7 +520,9 @@ export default {
             regenerate: 'Regenerate',
             speechReading: 'Speech Reading',
             preview: 'Preview',
-            estimatedTime: 'Estimated Time'
+            estimatedTime: 'Estimated Time',
+            timeUnit: 'min',
+            estimatedReadingTime: 'Estimated Reading Time'
         },
         questionBank: {
             title: 'Smart Question Bank',
@@ -587,7 +600,18 @@ export default {
             chat: {
                 me: 'Me',
                 interviewer: 'Interviewer',
-                send: 'Send'
+                send: 'Send',
+                openingGreeting: 'Hello! I am your interviewer today. We will conduct a {duration}-minute interview in {style} style. Let\'s begin. First, please answer: {question}',
+                feedbackTemplate: 'Thank you for your answer. {feedback} Next, please answer: {nextQuestion}',
+                tips: {
+                    recording: '🎤 Recording...',
+                    recordingCompleted: '✅ Recording completed',
+                    recordingCompletedNoContent: '✅ Recording completed (no content)',
+                    audioProcessingFailed: 'Audio processing failed: {error}',
+                    preparing: '📤 Preparing to record...',
+                    micPermissionNotGranted: 'Microphone permission not granted. Will request permission again when you click the record button',
+                    micInitHint: 'Microphone initialization: Permission will be requested on first recording'
+                }
             },
             progress: {
                 title: 'Interview Progress',

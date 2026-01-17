@@ -458,6 +458,17 @@ export default {
             keyword: {
                 title: '关键词优化建议',
                 tip: '建议在简历中自然融入以上关键词，提升ATS系统匹配度'
+            },
+            scoreDescriptions: {
+                excellent: '优秀的简历，具有很强的竞争力',
+                good: '良好的简历，需要一些小的优化',
+                average: '中等的简历，有改进空间',
+                basic: '基础的简历，需要较多优化',
+                poor: '较差的简历，建议重新撰写'
+            },
+            keywordTypes: {
+                technical: '技术关键词',
+                softSkill: '软技能关键词'
             }
         },
         selfIntro: {
@@ -511,7 +522,9 @@ export default {
             regenerate: '重新生成',
             speechReading: '语音朗读',
             preview: '预览',
-            estimatedTime: '预计时长'
+            estimatedTime: '预计时长',
+            timeUnit: '分钟',
+            estimatedReadingTime: '预计朗读时间'
         },
         questionBank: {
             title: '智能题库',
@@ -589,7 +602,18 @@ export default {
             chat: {
                 me: '我',
                 interviewer: '面试官',
-                send: '发送'
+                send: '发送',
+                openingGreeting: '您好！我是今天的面试官，我们将进行一场{duration}分钟的{style}风格面试。现在开始我们的面试，首先请您回答：{question}',
+                feedbackTemplate: '感谢您的回答。{feedback} 接下来请您回答：{nextQuestion}',
+                tips: {
+                    recording: '🎤 录音中...',
+                    recordingCompleted: '✅ 录音已完成',
+                    recordingCompletedNoContent: '✅ 录音已完成（无内容）',
+                    audioProcessingFailed: '音频处理失败: {error}',
+                    preparing: '📤 正在准备录音...',
+                    micPermissionNotGranted: '麦克风权限未授予，点击录音按钮时会再次请求权限',
+                    micInitHint: '麦克风初始化提示：首次录音时会请求权限'
+                }
             },
             progress: {
                 title: '面试进度',
