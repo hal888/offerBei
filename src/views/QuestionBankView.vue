@@ -2,12 +2,11 @@
   <div class="question-bank-container">
     <h1>{{ $t('pages.questionBank.title') }}</h1>
     
-    <!-- 生成题库遮盖层 -->
+    <!-- 生成加载遮盖层 -->
     <div v-if="isGenerating" class="generate-overlay">
-      <div class="generate-loading">
+      <div class="loading-container">
         <div class="loading-spinner"></div>
-        <h3>{{ $t('loading.generatingBank') }}</h3>
-        <p>{{ $t('loading.generatingBankDesc') }}</p>
+        <h3>{{ loadingMessage || t('loading.generating') }}</h3>
       </div>
     </div>
     
@@ -183,6 +182,7 @@ const selectedCount = ref(10)
 const customTopic = ref('')
 const questions = ref([])
 const isGenerating = ref(false)
+const loadingMessage = ref('')
 
 // 页面加载时自动获取已生成的题库数据
 onMounted(async () => {
@@ -264,6 +264,38 @@ watch(selectedCount, () => {
 
 const generateQuestions = () => {
   isGenerating.value = true
+  loadingMessage.value = t('pages.questionBank.generating.initial')
+  
+  // 设置进度消息更新定时器
+  let messageTimers = []
+  
+  // 5秒后更新消息
+  messageTimers.push(setTimeout(() => {
+    if (isGenerating.value) {
+      loadingMessage.value = t('pages.questionBank.generating.progress1')
+    }
+  }, 5000))
+  
+  // 10秒后更新消息
+  messageTimers.push(setTimeout(() => {
+    if (isGenerating.value) {
+      loadingMessage.value = t('pages.questionBank.generating.progress2')
+    }
+  }, 10000))
+  
+  // 15秒后更新消息
+  messageTimers.push(setTimeout(() => {
+    if (isGenerating.value) {
+      loadingMessage.value = t('pages.questionBank.generating.progress3')
+    }
+  }, 15000))
+  
+  // 20秒后更新消息
+  messageTimers.push(setTimeout(() => {
+    if (isGenerating.value) {
+      loadingMessage.value = t('pages.questionBank.generating.almostDone')
+    }
+  }, 20000))
   
   // 从localStorage获取userId，如果没有则生成一个新的
   let userId = localStorage.getItem('userId')
@@ -337,6 +369,10 @@ const generateQuestions = () => {
   })
   .finally(() => {
     isGenerating.value = false
+    loadingMessage.value = ''
+    // 清除所有定时器
+    messageTimers.forEach(timer => clearTimeout(timer))
+    messageTimers = []
   })
 }
 

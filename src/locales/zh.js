@@ -469,6 +469,13 @@ export default {
             keywordTypes: {
                 technical: '技术关键词',
                 softSkill: '软技能关键词'
+            },
+            analyzing: {
+                initial: '正在分析简历，请稍候...',
+                progress1: '正在分析简历内容...',
+                progress2: '正在评估简历质量...',
+                progress3: '正在生成优化建议...',
+                almostDone: '即将完成，请稍候...'
             }
         },
         selfIntro: {
@@ -562,7 +569,14 @@ export default {
                 answer: '参考答案',
                 analysis: '问题分析'
             },
-            total: '共 {count} 道题'
+            total: '共 {count} 道题',
+            generating: {
+                initial: '正在生成题库，请稍候...',
+                progress1: '正在分析简历内容...',
+                progress2: '正在生成面试问题...',
+                progress3: '正在生成参考答案...',
+                almostDone: '即将完成，请稍候...'
+            }
         },
         mockInterview: {
             title: '全真模拟真人面试',

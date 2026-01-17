@@ -467,6 +467,13 @@ export default {
             keywordTypes: {
                 technical: 'Technical Keyword',
                 softSkill: 'Soft Skill Keyword'
+            },
+            analyzing: {
+                initial: 'Analyzing resume, please wait...',
+                progress1: 'Analyzing resume content...',
+                progress2: 'Evaluating resume quality...',
+                progress3: 'Generating optimization suggestions...',
+                almostDone: 'Almost done, please wait...'
             }
         },
         selfIntro: {
@@ -560,7 +567,14 @@ export default {
                 answer: 'Reference Answer',
                 analysis: 'Analysis'
             },
-            total: 'Total {count} questions'
+            total: 'Total {count} questions',
+            generating: {
+                initial: 'Generating question bank, please wait...',
+                progress1: 'Analyzing resume content...',
+                progress2: 'Creating interview questions...',
+                progress3: 'Generating reference answers...',
+                almostDone: 'Almost done, please wait...'
+            }
         },
         mockInterview: {
             title: 'Live Mock Interview',

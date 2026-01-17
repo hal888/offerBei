@@ -6,7 +6,7 @@
     <div v-if="isUploading" class="upload-overlay">
       <div class="loading-container">
         <div class="loading-spinner"></div>
-        <h3>{{ t('loading.resumeUploading') }}</h3>
+        <h3>{{ loadingMessage || t('loading.resumeUploading') }}</h3>
         <p>{{ t('loading.resumeAnalyzing') }}</p>
       </div>
     </div>
@@ -259,6 +259,7 @@ const optimizationTabs = computed(() => [
   t('pages.resume.tabs.keyword')
 ])
 const isUploading = ref(false)
+const loadingMessage = ref('')
 const showUploadModal = ref(false)
 const recentFiles = ref([])
 const recentFilesLoading = ref(false)
@@ -378,6 +379,38 @@ const uploadResume = (file) => {
   }
   
   isUploading.value = true
+  loadingMessage.value = t('pages.resume.analyzing.initial')
+  
+  // 设置进度消息更新定时器
+  let messageTimers = []
+  
+  // 5秒后更新消息
+  messageTimers.push(setTimeout(() => {
+    if (isUploading.value) {
+      loadingMessage.value = t('pages.resume.analyzing.progress1')
+    }
+  }, 5000))
+  
+  // 10秒后更新消息
+  messageTimers.push(setTimeout(() => {
+    if (isUploading.value) {
+      loadingMessage.value = t('pages.resume.analyzing.progress2')
+    }
+  }, 10000))
+  
+  // 15秒后更新消息
+  messageTimers.push(setTimeout(() => {
+    if (isUploading.value) {
+      loadingMessage.value = t('pages.resume.analyzing.progress3')
+    }
+  }, 15000))
+  
+  // 20秒后更新消息
+  messageTimers.push(setTimeout(() => {
+    if (isUploading.value) {
+      loadingMessage.value = t('pages.resume.analyzing.almostDone')
+    }
+  }, 20000))
   
   // 创建FormData对象
   const formData = new FormData()
@@ -416,6 +449,10 @@ const uploadResume = (file) => {
   })
   .finally(() => {
     isUploading.value = false
+    loadingMessage.value = ''
+    // 清除所有定时器
+    messageTimers.forEach(timer => clearTimeout(timer))
+    messageTimers = []
   })
 }
 
