@@ -287,13 +287,10 @@ const generateAnalysis = () => {
   isLoading.value = true
   loadingMessage.value = t('loading.generatingAnalysis')
   
-  const userId = getUserId()
-  
-  // 调用后端API
+  // 调用后端API（不需要传递userId，后端会从JWT token中获取）
   apiClient.post('/strategy/analysis', {
     backgroundInfo: backgroundInfo.value,
-    directions: selectedDirections.value,
-    userId: userId
+    directions: selectedDirections.value
   })
   .then(response => {
     analysisResult.value = response.data
@@ -324,14 +321,11 @@ const generateQuestions = () => {
   isLoading.value = true
   loadingMessage.value = t('loading.generatingQuestions')
   
-  const userId = getUserId()
-  
-  // 调用后端API
+  // 调用后端API（不需要传递userId，后端会从JWT token中获取）
   apiClient.post('/strategy/questions', {
     companyName: companyInfo.value.companyName,
     position: companyInfo.value.position,
-    questionTypes: selectedQuestionTypes.value,
-    userId: userId
+    questionTypes: selectedQuestionTypes.value
   })
   .then(response => {
     generatedQuestions.value = response.data.questions
@@ -364,20 +358,9 @@ const generateQuestions = () => {
   })
 }
 
-// 获取userId的辅助函数
-const getUserId = () => {
-  let userId = localStorage.getItem('userId')
-  if (!userId) {
-    userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    localStorage.setItem('userId', userId)
-  }
-  return userId
-}
-
 // 获取已有的画像分析历史
 const fetchAnalysisHistory = async () => {
-  const userId = getUserId()
-  
+  // 后端会从JWT token中自动获取user_id，不需要从前端传递
   try {
     const response = await apiClient.get(`/strategy/analysis/history`)
     if (response.data && response.data.length > 0) {
@@ -406,8 +389,7 @@ const fetchAnalysisHistory = async () => {
 
 // 获取已有的反问问题历史
 const fetchQuestionsHistory = async () => {
-  const userId = getUserId()
-  
+  // 后端会从JWT token中自动获取user_id，不需要从前端传递
   try {
     const response = await apiClient.get(`/strategy/questions/history`)
     if (response.data && response.data.length > 0) {
