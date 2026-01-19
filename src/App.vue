@@ -150,8 +150,12 @@ import { useI18n } from 'vue-i18n'
 const { t, locale } = useI18n()
 
 const toggleLanguage = () => {
-  locale.value = locale.value === 'zh' ? 'en' : 'zh'
-  localStorage.setItem('user-locale', locale.value)
+  const newLocale = locale.value === 'zh' ? 'en' : 'zh'
+  // 先更新 localStorage，确保 API 拦截器能读取到最新值
+  localStorage.setItem('user-locale', newLocale)
+  // 再更新 i18n locale
+  locale.value = newLocale
+  console.log('[Language Toggle] Changed to:', newLocale, '| localStorage:', localStorage.getItem('user-locale'))
 }
 
 // 更新页面Meta标签的函数
@@ -197,6 +201,24 @@ watch([locale, () => route.path], () => {
 
 // 组件挂载后动态插入JSON-LD Schema标记
 onMounted(async () => {
+  // 同步语言状态：确保 localStorage 和 i18n locale 一致
+  // 这对于首次访问的用户非常重要
+  const savedLocale = localStorage.getItem('user-locale')
+  const currentLocale = locale.value
+  
+  if (!savedLocale) {
+    // 首次访问，localStorage 为空，保存 i18n 检测到的语言
+    localStorage.setItem('user-locale', currentLocale)
+    console.log('[Language Init] First visit detected. Saved locale to localStorage:', currentLocale)
+  } else if (savedLocale !== currentLocale) {
+    // localStorage 和 i18n 不一致，以 localStorage 为准（用户上次的选择）
+    locale.value = savedLocale
+    console.log('[Language Init] Synced locale from localStorage:', savedLocale)
+  } else {
+    // 已同步，无需操作
+    console.log('[Language Init] Locale already synced:', currentLocale)
+  }
+  
   // 等待router完全准备好后再更新页面Meta
   await router.isReady()
   updatePageMeta()

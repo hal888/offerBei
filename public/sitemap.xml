@@ -7,6 +7,22 @@
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
+
+  <!-- 使用教程 -->
+  <url>
+    <loc>https://offerbei.ailongdev.com/manual</loc>
+    <lastmod>2026-01-07</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- 常见问题 -->
+  <url>
+    <loc>https://offerbei.ailongdev.com/faq</loc>
+    <lastmod>2026-01-07</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
   
   <!-- 简历优化 -->
   <url>

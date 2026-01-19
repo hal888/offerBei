@@ -18,6 +18,7 @@ apiClient.interceptors.request.use(
     // 添加语言头
     const locale = localStorage.getItem('user-locale') || 'zh'
     config.headers['X-Locale'] = locale
+    console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url} | X-Locale: ${locale}`)
     return config
   },
   error => {
