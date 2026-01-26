@@ -132,6 +132,13 @@ def generate():
             # 查询用户
             user = User.query.filter_by(user_id=user_id).first()
             if user:
+                # 删除该用户同类型的旧自我介绍记录，只保留最新的一条
+                try:
+                    intro_type = f"{version}_{style}"
+                    SelfIntro.query.filter_by(user_id=user_id, self_intro_type=intro_type).delete()
+                except Exception as e:
+                    print(f"删除旧自我介绍记录失败: {e}")
+                
                 # 创建自我介绍记录
                 self_intro = SelfIntro(
                     user_id=user_id,

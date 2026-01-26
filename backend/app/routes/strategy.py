@@ -141,7 +141,13 @@ def analysis():
             }
         
         # 保存到数据库
-        try:       
+        try:
+            # 删除用户旧的策略分析记录，只保留最新的一条
+            try:
+                InterviewStrategy.query.filter_by(user_id=user_id, type='analysis').delete()
+            except Exception as e:
+                print(f"删除旧策略分析记录失败: {e}")
+            
             # 创建InterviewStrategy记录
             strategy = InterviewStrategy(
                 user_id=user_id,
@@ -372,7 +378,13 @@ def questions():
             }
         
         # 保存到数据库
-        try:          
+        try:
+            # 删除用户旧的反问问题记录，只保留最新的一条
+            try:
+                InterviewStrategy.query.filter_by(user_id=user_id, type='questions').delete()
+            except Exception as e:
+                print(f"删除旧反问问题记录失败: {e}")
+          
             # 创建InterviewStrategy记录
             strategy = InterviewStrategy(
                 user_id=user_id,

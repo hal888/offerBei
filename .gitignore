@@ -14,6 +14,7 @@ dist-ssr
 .trae
 .vscode
 backend/tests
+client-app
 
 # Editor directories and files
 .vscode/*

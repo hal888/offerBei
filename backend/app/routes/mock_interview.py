@@ -653,6 +653,12 @@ def save_report():
         import json
         
         # 创建MockInterview记录
+        try:
+            # 删除用户旧的模拟面试记录，只保留最新的一条
+            MockInterview.query.filter_by(user_id=user_id).delete()
+        except Exception as e:
+            print(f"删除旧模拟面试记录失败: {e}")
+        
         mock_interview = MockInterview(
             user_id=user_id,
             resume_id=resume_id,

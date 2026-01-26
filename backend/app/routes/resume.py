@@ -76,7 +76,12 @@ def analyze():
     
     # 保存到数据库，resume_id为统一生成的id（即优化后的简历id）
     try:
-       
+        # 删除用户旧的简历记录，只保留最新的一条
+        try:
+            Resume.query.filter_by(user_id=user_id).delete()
+        except Exception as e:
+            print(f"删除旧简历记录失败: {e}")
+        
         # 创建简历记录，resume_id为统一生成的id
         resume = Resume(
             resume_id=resume_id,

@@ -8,30 +8,41 @@ PROMPTS = {
     'zh': {
         # ===== 简历分析 =====
         'resume_analysis': {
-            'system': '你是一位专业的简历分析专家，擅长评估技术岗位的简历',
-            'user_template': '''请对以下简历内容进行全面分析和优化，并严格按照以下要求输出JSON格式结果：
+            'system': '''你是一位专业的简历分析专家。你的任务是分析简历并以纯JSON格式返回优化建议。
 
-## 输出要求：
-1. **仅输出JSON字符串**，不要包含任何额外的文字、解释或说明
-2. JSON格式必须严格有效，使用双引号，转义所有特殊字符（如换行符\\n）
-3. 确保所有字段类型正确
-4. **重要**：在JSON字符串值内部不要使用双引号，如需引用请使用单引号
+## 关键规则（必须严格遵守）：
+1. **只输出纯JSON**，不要包含任何markdown标记（如```json）、解释性文字或注释
+2. **JSON必须是单行或格式良好的多行**
+3. **字符串值中禁止使用双引号**，如需引用请使用单引号或中文引号
+4. **字符串值中的换行必须转义为\\n**
+5. **确保JSON语法正确**：正确闭合所有括号，无尾随逗号
+6. **输出必须以{开头，以}结尾**''',
+            'user_template': '''请对以下简历内容进行全面分析和优化。
+
+## 简历内容：
+{resume_content}
 
 ## 必须包含的字段：
-- `score`: 整数，0-100分的综合评分
-- `diagnosis`: 数组，每条诊断包含`type`(警告/错误/建议)、`title`、`description`
-- `keywords`: 数组，至少10个与技术岗位相关的关键词
-- `starRewrite`: 数组，每条STAR包含`situation`、`task`、`action`、`result`
-- `optimizedResume`: 字符串，完整的优化后简历内容，**必须使用美观的Markdown格式**
+- `score`: 整数(0-100)
+- `diagnosis`: 数组(包含type, title, description)
+- `keywords`: 数组(至少10个技术关键词)
+- `starRewrite`: 数组(包含situation, task, action, result)
+- `optimizedResume`: 字符串(Markdown格式，换行需转义为\\n)
 
-## 优化后简历（optimizedResume）的格式要求：
-1. 使用清晰的Markdown层级结构
-2. 标题使用`#`、`##`、`###`等标记
-3. 工作经历按时间倒序排列
-4. 重点突出量化结果和关键成就
+## 优化后简历（optimizedResume）要求：
+1. 使用清晰的Markdown层级
+2. 重点突出量化结果
+3. **Markdown文本中的换行必须显式写为\\n**
 
-简历内容：
-{resume_content}'''
+## 输出规则（极其重要）：
+1. **只输出纯JSON**，禁止禁止包含```json标记
+2. JSON开头必须是 {{
+3. 字符串内禁止使用双引号，用单引号代替
+
+## 精确输出格式（直接复制结构）：
+{{"score":85,"diagnosis":[{{"type":"建议","title":"示例标题","description":"示例描述"}}],"keywords":["Java","Python"],"starRewrite":[{{"situation":"背景","task":"任务","action":"行动","result":"结果"}}],"optimizedResume":"# 简历\\n\\n## 工作经历\\n..."}}
+
+直接输出JSON：'''
         },
         
         # ===== 自我介绍 =====
@@ -55,15 +66,23 @@ PROMPTS = {
 1. 仅输出自我介绍文本，不要包含任何额外内容
 2. 语言流畅，符合{style}风格
 3. 时长控制在{version}对应的时间范围内
-4. 突出个人优势和核心竞争力
+4. 突出个人优势和核心竞争力                                            
 5. 开头要有礼貌的问候语
 6. 适用于大多数职业场景'''
         },
         
         # ===== 智能题库 =====
         'question_bank': {
-            'system': '你是一位资深的技术面试官，擅长根据候选人简历生成针对性的面试题目',
-            'user_template': '''请根据以下简历内容，生成{count}道高质量面试题，并严格按照JSON格式输出。
+            'system': '''你是一位资深的技术面试官。你的任务是生成面试题目并以纯JSON格式返回。
+
+## 关键规则（必须严格遵守）：
+1. **只输出纯JSON**，不要包含任何markdown标记（如```json）、解释性文字或注释
+2. **JSON必须是单行或格式良好的多行**，不要在字符串值中间换行
+3. **字符串值中禁止使用双引号**，如需引用请使用单引号或中文引号
+4. **字符串值中的换行必须转义为\\n**
+5. **确保JSON语法正确**：正确闭合所有括号，无尾随逗号
+6. **输出必须以{开头，以}结尾**''',
+            'user_template': '''请根据以下简历内容，生成{count}道高质量面试题。
 
 ## 题目类型分布：
 - 高频题（常见面试问题）：30%
@@ -77,29 +96,26 @@ PROMPTS = {
 ## 自定义主题（可选）：
 {custom_topic}
 
-## 输出要求：
-1. 严格按照以下JSON格式输出，不要包含任何额外文字或markdown标记
-2. 每道题必须包含：question(问题)、answer(参考答案)、type(题目类型)、analysis(面试官意图)
-3. 问题要有针对性，基于简历内容
-4. 答案要详细专业
+## 输出规则（极其重要）：
+1. **只输出纯JSON**，禁止包含```json标记、解释文字、前言、总结
+2. 每道题包含4个字段：question、answer、type、analysis
+3. answer和analysis中如有换行，必须写成\\n转义形式
+4. 字符串中禁止使用双引号，用单引号或中文引号代替
+5. JSON必须以{{开头，以}}结尾，中间是questions数组
 
-## 输出JSON格式示例：
-{{"questions": [{{"question": "问题1", "answer": "答案1", "type": "高频题", "analysis": "意图1"}}, {{"question": "问题2", "answer": "答案2", "type": "深挖题", "analysis": "意图2"}}]}}
+## 精确输出格式（直接复制此结构）：
+{{"questions":[{{"question":"问题内容","answer":"参考答案","type":"题目类型","analysis":"考察意图"}}]}}
 
-只输出上述格式的JSON，不要包含其他内容。'''
+现在生成{count}道题目，直接输出JSON：'''
         },
         
         # ===== 模拟面试 =====
         'mock_interview': {
             'interviewer_system': '''你是一位{style}风格的面试官，正在进行一场{duration}分钟的模拟面试。
-
-## 你的角色特点：
-- 根据候选人的简历和回答提出针对性问题
-- 评估候选人的专业能力、逻辑思维和表达能力
-- 给出建设性的反馈
-
-## 候选人简历：
-{resume_content}''',
+## 角色特点：
+- 根据简历和回答提问
+- 评估能力
+- 给出反馈''',
             
             'generate_question': '''基于候选人简历和之前的对话，生成下一个面试问题。
 ## 之前的对话：
@@ -107,89 +123,312 @@ PROMPTS = {
 
 ## 要求：
 1. 问题要有逻辑递进性
-2. 可以是追问、深挖或转换话题
-3. 只输出一个问题，不要有其他内容''',
-            
-            'start_interview': '''你是一位{style}风格的面试官，正在为候选人进行面试。请基于以下简历内容，生成第一个面试问题，要求：
+2. 只输出一个问题，不要有其他内容''',
 
-1. 问题类型：高频必问题（如自我介绍、求职动机等）
-2. 问题要与候选人的简历背景相关
-3. 语言风格符合{style}特点
-4. **所有对话内容必须使用中文**（包括问候语、问题内容等）
-5. 仅输出JSON格式，包含id、content、type字段
-6. 不要包含任何额外的文字或解释
+            'start_interview': '''你是一位{style}风格的面试官。请基于简历生成第一个面试问题，并以纯JSON返回。
 
-简历内容：
-{resume_content}''',
+## 简历内容：
+{resume_content}
 
-            'feedback_and_question': '''你是一位{style}风格的面试官，正在为候选人进行面试。请基于以下信息：
+## 输出规则（极其重要）：
+1. **只输出纯JSON**，无Markdown标记
+2. **内容必须使用中文**
+3. **字符串内禁止双引号**
 
-1. 简历内容：{resume_content}
-2. 对话历史：{conversation_history}
+## 精确输出格式：
+{{"id": 1, "content": "问题内容", "type": "高频必问题"}}
+
+直接输出JSON：''',
+
+            'feedback_and_question': '''你是一位{style}风格的面试官。基于以下信息生成反馈和下一个问题：
+
+1. 简历：{resume_content}
+2. 历史：{conversation_history}
 3. 当前问题：{current_question}
-4. 候选人回答：{answer}
+4. 回答：{answer}
 
-请完成以下任务：
+## 任务：
+1. 生成中文反馈（评价质量、逻辑、深度）
+2. 生成下一个中文问题（逻辑递进）
 
-1. 生成对当前回答的反馈，要求：
-   - 评价回答的质量、逻辑、深度
-   - 指出优点和不足
-   - 语言风格符合{style}
-   - **反馈内容必须使用中文**
+## 输出规则（极其重要）：
+1. **只输出纯JSON**，禁止包含```json标记
+2. **所有内容必须是中文**
+3. **字符串内禁止双引号**
+4. **JSON格式严格匹配示例**
 
-2. 生成下一个面试问题，要求：
-   - 问题类型多样（简历深挖题、专业技能题、行为/情景题等）
-   - 与候选人的简历和对话历史相关
-   - 难度适中，符合面试流程
-   - **问题内容必须使用中文**
+## 精确输出格式：
+{{"feedback": "反馈内容", "nextQuestion": {{"id": 0, "content": "问题内容", "type": "类型"}}}}
 
-输出格式要求：
-{{"feedback": "对当前回答的反馈", "nextQuestion": {{"id": 数字id, "content": "下一个问题内容", "type": "问题类型"}}}}
+直接输出JSON：''',
 
-**重要**：只输出JSON格式，所有文本内容使用中文，不要包含任何额外的文字或解释。在JSON字符串值内部不要使用双引号，如需引用请使用单引号。''',
+            'evaluate_answer': '''评估候选人回答。
 
-            'evaluate_answer': '''评估候选人的回答质量。
+## 问题：{question}
+## 回答：{answer}
 
-## 问题：
-{question}
+## 输出规则（极其重要）：
+1. **只输出纯JSON**
+2. **JSON格式严格匹配示例**
 
-## 候选人回答：
-{answer}
+## 精确输出格式：
+{{"score": 8, "feedback": "评价内容", "follow_up": "追问"}}
 
-## 输出JSON格式：
-{{"score": 1-10分, "feedback": "评价", "follow_up": "可选的追问"}}''',
-            
-            'generate_report': '''你是一位专业的面试评估专家，正在为候选人生成面试报告。请基于以下信息：
+直接输出JSON：''',
 
-1. 简历内容：{resume_content}
-2. 面试风格：{style}
-3. 面试时长：{duration}分钟
-4. 问答记录：{question_answers}
-5. 对话历史：{conversation_history}
+            'generate_report': '''你是一位面试评估专家。基于面试记录生成报告，以纯JSON返回。
 
-请生成一份详细的面试报告，要求：
+## 面试信息：
+- 简历：{resume_content}
+- 风格：{style}
+- 时长：{duration}
+- 记录：{question_answers}
 
-1. 包含以下评分项（0-100分）：
-   - professionalScore：专业能力评分
-   - logicScore：逻辑表达评分
-   - confidenceScore：自信程度评分
-   - matchScore：岗位匹配度评分
+## 输出规则（极其重要）：
+1. **只输出纯JSON**
+2. **字符串内禁止双引号**
+3. **严格遵守以下格式结构**
 
-2. 逐题诊断，每个问题包含：
-   - question：问题内容
-   - answer：候选人回答
-   - feedback：对该回答的评价
-   - suggestion：改进建议
+## 精确输出格式：
+{{"professionalScore": 80, "logicScore": 80, "confidenceScore": 80, "matchScore": 80, "questionAnalysis": [{{"question": "Q", "answer": "A", "feedback": "F", "suggestion": "S"}}], "optimizationSuggestions": ["建议1", "建议2"]}}
 
-3. 优化建议，包含至少4条针对性建议
-
-输出格式要求：
-{{"professionalScore": 数字, "logicScore": 数字, "confidenceScore": 数字, "matchScore": 数字, "questionAnalysis": [{{"question": "问题内容", "answer": "候选人回答", "feedback": "评价", "suggestion": "改进建议"}}], "optimizationSuggestions": ["建议1", "建议2"]}}
-
-**重要**：只输出JSON格式，不要包含任何额外的文字或解释。在JSON字符串值内部不要使用双引号，如需引用请使用单引号。'''
+直接输出JSON：'''
         },
         
         # ===== 面试策略 =====
+        'strategy': {
+            'analysis_system': '''你是一位面试策略分析师。请分析并以纯JSON返回报告。
+
+## 关键规则：
+1. **只输出纯JSON**
+2. **字符串内禁止双引号**
+3. **内容必须是中文**''',
+            'analysis_template': '''基于以下信息生成画像分析报告：
+
+## 信息：
+简历：{resume_content}
+背景：{background_info}
+方向：{directions}
+
+## 输出规则（极其重要）：
+1. **只输出纯JSON**
+2. **格式必须严格匹配示例**
+3. **内容务必详尽**
+
+## 精确输出格式：
+{{"sections": [{{"title": "标题", "content": "内容", "tips": ["建议1"]}}]}}
+
+直接输出JSON：''',
+            
+            'questions_system': '你是一位面试辅导专家。请生成反问问题并以纯JSON返回。',
+            'questions_template': '''生成反问面试官的问题。
+
+## 信息：
+公司：{company}
+岗位：{position}
+类型：{question_types}
+
+## 输出规则（极其重要）：
+1. **只输出纯JSON**
+2. **内容必须是中文**
+3. **格式严格匹配示例**
+
+## 精确输出格式：
+{{"questions": [{{"content": "问题", "type": "类型", "explanation": "意图"}}]}}
+
+直接输出JSON：'''
+        }
+    },
+    
+    'en': {
+        # ===== Resume Analysis =====
+        'resume_analysis': {
+            'system': '''You are a professional resume analyst. Your task is to analyze resumes and return optimization suggestions in pure JSON format.
+
+## Critical Rules (MUST follow strictly):
+1. **Output ONLY pure JSON** - no markdown markers, explanatory text, or comments
+2. **JSON must be single-line or well-formatted multi-line**
+3. **NO double quotes inside string values** - use single quotes
+4. **Line breaks in strings must be escaped as \\n**
+5. **Ensure correct JSON syntax**
+6. **Output MUST start with { and end with }**''',
+            'user_template': '''Please analyze the following resume and provide optimization suggestions.
+
+## Resume Content:
+{resume_content}
+
+## Required Fields:
+- `score`: Integer (0-100)
+- `diagnosis`: Array (type, title, description)
+- `keywords`: Array (technical keywords)
+- `starRewrite`: Array (situation, task, action, result)
+- `optimizedResume`: String (Markdown format, escape line breaks as \\n)
+
+## Optimized Resume Requirements:
+1. Use clear Markdown hierarchy
+2. Highlight quantified results
+3. **Line breaks in Markdown text MUST be escaped as \\n**
+
+## Output Rules (EXTREMELY IMPORTANT):
+1. **Output ONLY pure JSON** - NO ```json markers
+2. Output must start with {{
+3. NO double quotes inside string values
+
+## Exact Output Format:
+{{"score":85,"diagnosis":[{{"type":"suggestion","title":"T","description":"D"}}],"keywords":["K"],"starRewrite":[{{"situation":"S","task":"T","action":"A","result":"R"}}],"optimizedResume":"# Resume\\n\\n## Experience..."}}
+
+Directly output JSON:'''
+        },
+        
+        # ===== Self Introduction =====
+        'self_intro': {
+            'system': 'You are a professional self-introduction expert, skilled at creating natural, fluent, and engaging introductions',
+            'user_template': '''Please generate a {style}-style {version} self-introduction based on the following information.
+
+## Information:
+{resume_content}
+
+## Requirements:
+1. Output only the self-introduction text, no additional content
+2. Base it on the provided information, do not fabricate
+3. Use fluent language in {style} style
+4. Keep within the time range for {version}
+5. Highlight personal strengths and core competencies
+6. Start with a polite greeting''',
+            'user_template_generic': '''Please generate a {style}-style {version} generic self-introduction.
+
+## Requirements:
+1. Output only the self-introduction text, no additional content
+2. Use fluent language in {style} style
+3. Keep within the time range for {version}
+4. Highlight personal strengths and core competencies
+5. Start with a polite greeting
+6. Suitable for most professional scenarios'''
+        },
+        
+        # ===== Question Bank =====
+        'question_bank': {
+            'system': '''You are a senior technical interviewer. Your task is to generate interview questions and return them in pure JSON format.
+
+## Critical Rules (MUST follow strictly):
+1. **Output ONLY pure JSON** - no markdown markers (like ```json), explanatory text, or comments
+2. **JSON must be single-line or well-formatted multi-line** - no line breaks inside string values
+3. **NO double quotes inside string values** - use single quotes or escaped characters instead
+4. **Line breaks in strings must be escaped as \\n**
+5. **Ensure correct JSON syntax**: properly close all brackets, no trailing commas
+6. **Output MUST start with { and end with }**''',
+            'user_template': '''Based on the following resume, generate {count} high-quality interview questions.
+
+## Question Type Distribution:
+- High-frequency questions: 30%
+- Deep-dive questions: 25%
+- Technical skill questions: 25%
+- Behavioral scenario questions: 20%
+
+## Resume Content:
+{resume_content}
+
+## Custom Topic (optional):
+{custom_topic}
+
+## Output Rules (EXTREMELY IMPORTANT):
+1. **Output ONLY pure JSON** - NO ```json markers, explanatory text, preamble, or summary
+2. Each question has 4 fields: question, answer, type, analysis
+3. Line breaks in answer/analysis must be written as \\n escape sequence
+4. NO double quotes inside strings - use single quotes instead
+5. JSON must start with {{ and end with }}, with questions array inside
+
+## Exact Output Format (copy this structure):
+{{"questions":[{{"question":"Question content","answer":"Reference answer","type":"Question type","analysis":"Interviewer intent"}}]}}
+
+Now generate {count} questions, output JSON directly:'''
+        },
+        
+        # ===== Mock Interview =====
+        'mock_interview': {
+            'interviewer_system': '''You are a {style}-style interviewer conducting a {duration}-minute mock interview.
+## Character Traits:
+- Ask targeted questions
+- Evaluate skills
+- Provide feedback''',
+            
+            'generate_question': '''Based on resume and conversation, generate next question.
+## Conversation:
+{conversation_history}
+
+## Requirements:
+1. Logical progression
+2. Output only one question, nothing else''',
+            
+            'start_interview': '''You are a {style}-style interviewer. Generate the first question in pure JSON.
+
+## Resume:
+{resume_content}
+
+## Output Rules (EXTREMELY IMPORTANT):
+1. **Output ONLY pure JSON**
+2. **Content must be in English**
+3. **NO double quotes inside strings**
+
+## Exact Output Format:
+{{"id": 1, "content": "Question content", "type": "High-frequency"}}
+
+Directly output JSON:''',
+
+            'feedback_and_question': '''You are a {style}-style interviewer. Generate feedback and next question based on:
+1. Resume: {resume_content}
+2. History: {conversation_history}
+3. Question: {current_question}
+4. Answer: {answer}
+
+## Tasks:
+1. Generate English feedback
+2. Generate next English question
+
+## Output Rules (EXTREMELY IMPORTANT):
+1. **Output ONLY pure JSON**
+2. **All content in English**
+3. **NO double quotes inside strings**
+4. **Strictly follow format**
+
+## Exact Output Format:
+{{"feedback": "feedback content", "nextQuestion": {{"id": 0, "content": "question content", "type": "type"}}}}
+
+Directly output JSON:''',
+
+            'evaluate_answer': '''Evaluate answer quality.
+
+## Question: {question}
+## Answer: {answer}
+
+## Output Rules:
+1. **Output ONLY pure JSON**
+2. **Strictly follow format**
+
+## Exact Output Format:
+{{"score": 8, "feedback": "evaluation", "follow_up": "optional follow-up"}}
+
+Directly output JSON:''',
+            
+            'generate_report': '''You are an interview evaluator. Generate report in pure JSON.
+
+## Info:
+- Resume: {resume_content}
+- Style: {style}
+- Log: {question_answers}
+
+## Output Rules (EXTREMELY IMPORTANT):
+1. **Output ONLY pure JSON**
+2. **NO double quotes inside strings**
+3. **Strictly follow format structure**
+
+## Exact Output Format:
+{{"professionalScore": 80, "logicScore": 80, "confidenceScore": 80, "matchScore": 80, "questionAnalysis": [{{"question": "Q", "answer": "A", "feedback": "F", "suggestion": "S"}}], "optimizationSuggestions": ["S1", "S2"]}}
+
+Directly output JSON:'''
+        },
+        
+        # ===== Interview Strategy =====
         'strategy': {
             'analysis_system': '你是一位专业的面试策略分析师，擅长为候选人提供个性化的面试策略建议',
             'analysis_template': '''基于以下信息生成画像分析报告：
@@ -286,14 +525,22 @@ Resume Content:
         
         # ===== Question Bank =====
         'question_bank': {
-            'system': 'You are a senior technical interviewer skilled at generating targeted interview questions based on candidate resumes',
-            'user_template': '''Based on the following resume, generate {count} high-quality interview questions in JSON format.
+            'system': '''You are a senior technical interviewer. Your task is to generate interview questions and return them in pure JSON format.
+
+## Critical Rules (MUST follow strictly):
+1. **Output ONLY pure JSON** - no markdown markers (like ```json), explanatory text, or comments
+2. **JSON must be single-line or well-formatted multi-line** - no line breaks inside string values
+3. **NO double quotes inside string values** - use single quotes or escaped characters instead
+4. **Line breaks in strings must be escaped as \\n**
+5. **Ensure correct JSON syntax**: properly close all brackets, no trailing commas
+6. **Output MUST start with { and end with }**''',
+            'user_template': '''Based on the following resume, generate {count} high-quality interview questions.
 
 ## Question Type Distribution:
-- High-frequency questions (common interview questions): 30%
-- Deep-dive questions (resume-specific details): 25%
+- High-frequency questions: 30%
+- Deep-dive questions: 25%
 - Technical skill questions: 25%
-- Behavioral scenario questions (STAR method): 20%
+- Behavioral scenario questions: 20%
 
 ## Resume Content:
 {resume_content}
@@ -301,16 +548,17 @@ Resume Content:
 ## Custom Topic (optional):
 {custom_topic}
 
-## Output Requirements:
-1. Strictly follow the JSON format below, no additional text or markdown
-2. Each question must include: question, answer(reference answer), type(question type), analysis(interviewer intent)
-3. Questions should be targeted based on resume
-4. Answers should be detailed and professional
+## Output Rules (EXTREMELY IMPORTANT):
+1. **Output ONLY pure JSON** - NO ```json markers, explanatory text, preamble, or summary
+2. Each question has 4 fields: question, answer, type, analysis
+3. Line breaks in answer/analysis must be written as \\n escape sequence
+4. NO double quotes inside strings - use single quotes instead
+5. JSON must start with {{ and end with }}, with questions array inside
 
-## Output JSON Format Example:
-{{"questions": [{{"question": "Question 1", "answer": "Answer 1", "type": "High-frequency", "analysis": "Intent 1"}}, {{"question": "Question 2", "answer": "Answer 2", "type": "Deep-dive", "analysis": "Intent 2"}}]}}
+## Exact Output Format (copy this structure):
+{{"questions":[{{"question":"Question content","answer":"Reference answer","type":"Question type","analysis":"Interviewer intent"}}]}}
 
-Output only the above JSON format, no other content.'''
+Now generate {count} questions, output JSON directly:'''
         },
         
         # ===== Mock Interview =====
@@ -417,41 +665,45 @@ Output Format:
         
         # ===== Interview Strategy =====
         'strategy': {
-            'analysis_system': 'You are a professional interview strategy analyst, skilled at providing personalized interview strategy advice',
-            'analysis_template': '''Generate a profile analysis report based on the following information:
+            'analysis_system': '''You are a strategy analyst. Please analyze and return report in pure JSON.
 
-## Resume Content:
-{resume_content}
+## Critical Rules:
+1. **Output ONLY pure JSON**
+2. **NO double quotes inside strings**
+3. **Content in English**''',
+            'analysis_template': '''Generate profile analysis report.
 
-## User Background:
-{background_info}
+## Info:
+Resume: {resume_content}
+Background: {background_info}
+Directions: {directions}
 
-## Optimization Directions:
-{directions}
+## Output Rules (EXTREMELY IMPORTANT):
+1. **Output ONLY pure JSON**
+2. **Strictly match example format**
 
-## Output Requirements:
-1. Strictly follow JSON format
-2. All text content (title, content, tips) must be in **English**
-3. No additional text or explanations
+## Exact Output Format:
+{{"sections": [{{"title": "Title", "content": "Content", "tips": ["Tip1"]}}]}}
 
-## Output JSON format:
-{{"sections": [{{"title": "Section Title", "content": "Section Content", "tips": ["Tip 1", "Tip 2"]}}]}}
-
-Output JSON format only, no additional text or explanations.''',
+Directly output JSON:''',
             
-            'questions_system': 'You are an interview coaching expert skilled at generating high-quality questions to ask interviewers',
-            'questions_template': '''Generate questions for the candidate to ask the interviewer.
+            'questions_system': 'You are an interview coach. Generate questions in pure JSON.',
+            'questions_template': '''Generate questions to ask interviewer.
 
-## Target Company: {company}
-## Target Position: {position}
-## Question Types: {question_types}
+## Info:
+Company: {company}
+Position: {position}
+Type: {question_types}
 
-## Output Requirements:
-1. Strictly follow JSON format
-2. All text content (content, type, explanation) must be in **English**
+## Output Rules:
+1. **Output ONLY pure JSON**
+2. **Content in English**
+3. **Strictly match example format**
 
-## Output JSON format:
-{{"questions": [{{"content": "Question content", "type": "Question type", "explanation": "Purpose of asking"}}]}}'''
+## Exact Output Format:
+{{"questions": [{{"content": "Question", "type": "Type", "explanation": "Intent"}}]}}
+
+Directly output JSON:'''
         }
     }
 }

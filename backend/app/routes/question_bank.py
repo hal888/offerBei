@@ -72,7 +72,64 @@ def _generate_single_batch(client, resume_content, topic, batch_count, locale='z
         json_content = cleaned[start_idx:end_idx]
         json_content = re.sub(r'[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]', '', json_content)
         
-        result = json.loads(json_content)
+        # 尝试解析 JSON，如果失败则尝试修复
+        try:
+            result = json.loads(json_content)
+        except json.JSONDecodeError as e:
+            print(f"[DEBUG] JSON解析失败，尝试修复: {e}")
+            # 尝试修复常见的 JSON 问题
+            fixed_content = json_content
+            
+            # 1. 移除 answer/analysis 字段中的未转义换行符
+            # 匹配 "answer": "..." 或 "analysis": "..." 并清理内部换行
+            def clean_field_value(match):
+                field_name = match.group(1)
+                value = match.group(2)
+                # 替换未转义的换行为 \n
+                value = value.replace('\n', '\\n').replace('\r', '\\r')
+                return f'"{field_name}": "{value}"'
+            
+            fixed_content = re.sub(
+                r'"(answer|analysis|content)":\s*"((?:[^"\\]|\\.)*)(?:\n|\r\n)((?:[^"\\]|\\.)*)"',
+                lambda m: f'"{m.group(1)}": "{m.group(2)}\\n{m.group(3)}"',
+                fixed_content
+            )
+            
+            # 2. 移除尾随逗号 (如 ,] 或 ,})
+            fixed_content = re.sub(r',\s*([}\]])', r'\1', fixed_content)
+            
+            # 3. 如果 questions 数组未闭合，尝试修复
+            if '"questions"' in fixed_content and fixed_content.count('[') > fixed_content.count(']'):
+                # 找到最后一个完整的对象并截断
+                last_complete_obj = fixed_content.rfind('}')
+                if last_complete_obj > 0:
+                    fixed_content = fixed_content[:last_complete_obj + 1]
+                    # 补充缺失的闭合符号
+                    missing_brackets = fixed_content.count('[') - fixed_content.count(']')
+                    missing_braces = fixed_content.count('{') - fixed_content.count('}')
+                    fixed_content += ']' * missing_brackets + '}' * missing_braces
+            
+            try:
+                result = json.loads(fixed_content)
+                print(f"[DEBUG] JSON修复成功")
+            except json.JSONDecodeError as e2:
+                print(f"[DEBUG] JSON修复失败: {e2}")
+                # 最后尝试：提取所有能找到的问题对象
+                questions = []
+                pattern = r'\{[^{}]*"content"\s*:\s*"[^"]+"\s*[^{}]*\}'
+                matches = re.findall(pattern, json_content)
+                for match in matches:
+                    try:
+                        q = json.loads(match)
+                        if 'content' in q:
+                            questions.append(q)
+                    except:
+                        pass
+                if questions:
+                    print(f"[DEBUG] 通过正则提取到 {len(questions)} 个问题")
+                    return questions
+                return []
+        
         return result.get("questions", [])
         
     except Exception as e:
@@ -234,6 +291,12 @@ def generate():
             db.session.commit()  # 立即提交，获取user_id
         
         # 创建题库记录
+        try:
+            # 删除用户旧的题库记录，只保留最新的一条
+            QuestionBank.query.filter_by(user_id=user_id).delete()
+        except Exception as e:
+            print(f"删除旧题库记录失败: {e}")
+        
         question_bank = QuestionBank(
             user_id=user_id,
             resume_id=resume_id,
