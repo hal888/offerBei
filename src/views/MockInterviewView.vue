@@ -269,7 +269,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, onActivated, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import apiClient from '@/utils/api.js'
@@ -340,13 +340,112 @@ const interviewerStyles = computed(() => [
 
 const durations = [15, 30, 45, 60]
 
-// 监听面试设置变化，实时从后端获取匹配的历史记录
+// 检查并加载匹配的历史记录
+const checkAndLoadMatchingReport = () => {
+  console.log('开始检查匹配的历史记录...')
+  console.log('当前历史记录数量:', interviewHistory.value.length)
+  console.log('当前选择的设置:', {
+    style: selectedStyle.value,
+    duration: selectedDuration.value
+  })
+  
+  if (interviewHistory.value.length === 0) {
+    console.log('没有历史记录，隐藏报告')
+    showReport.value = false
+    return
+  }
+  
+  // 后端已经根据筛选条件返回了最新的一条记录，直接使用即可
+  const matchingHistory = interviewHistory.value[0]
+  console.log('后端返回的历史记录:', matchingHistory)
+  
+  // 检查返回的记录是否与当前选择的设置匹配（使用规范化后的名称进行比较）
+  if (normalizeStyleName(matchingHistory.style) === normalizeStyleName(selectedStyle.value) && 
+      Math.abs(matchingHistory.duration - selectedDuration.value) <= 5) {
+    
+    if (matchingHistory.reportData) {
+      console.log('历史记录包含reportData，开始加载报告')
+      reportData.value = matchingHistory.reportData
+      showReport.value = true
+      console.log('报告已加载，showReport:', showReport.value)
+    } else {
+      console.log('历史记录不包含reportData，跳过加载')
+      showReport.value = false
+    }
+  } else {
+    console.log('后端返回的记录与当前选择的设置不匹配，隐藏报告')
+    showReport.value = false
+  }
+}
+
+// 获取模拟面试历史记录
+const fetchMockInterviewHistory = async () => {
+  const userId = localStorage.getItem('userId')
+  if (!userId) return
+
+  // 只有在没有进行中面试时才显示加载状态，避免打断当前面试体验
+  if (!isInterviewStarted.value) {
+    isLoading.value = true
+    loadingMessage.value = t('loading.loadingHistory') // 需要确保有这个 key 或者复用 'loading.processing'
+  }
+
+  try {
+    const timestamp = new Date().getTime()
+    
+    // 发送当前选择的style和duration参数
+    const response = await apiClient.get(`/mock-interview/history?t=${timestamp}`, {
+      params: {
+        userId: userId,
+        style: selectedStyle.value,
+        duration: selectedDuration.value
+      }
+    })
+    // 保存历史记录
+    interviewHistory.value = response.data || []
+    console.log('模拟面试历史记录:', interviewHistory.value)
+    
+    // 检查是否有匹配的历史记录，如果有则自动加载
+    checkAndLoadMatchingReport()
+    
+  } catch (error) {
+    console.error('获取面试历史失败:', error)
+    if (error.isUnauthorized) {
+      // 401错误，显示请先登录提示，点击确定后跳转到登录页
+      showErrorMessage(t('alerts.loginRequired'), t('alerts.title'), () => {
+        router.push('/login')
+      })
+    } else if (error.response && error.response.data.error === 'User not found') {
+      showErrorMessage(t('alerts.uploadResumeFirst'), t('alerts.title'), () => {
+        router.push('/resume')
+      })
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 监听面试设置变化
 const setupWatchers = () => {
-  // 当面试设置变化时，实时从后端获取匹配的历史记录
   watch([selectedStyle, selectedDuration], () => {
+    // 当面试设置变化时，实时从后端获取匹配的历史记录
     fetchMockInterviewHistory()
   })
 }
+
+// 每次组件激活时
+onActivated(() => {
+   // 如果没有面试正在进行，重置状态或刷新数据
+   if (!isInterviewStarted.value) {
+     // 可以在这里重新获取用户配置或历史
+     fetchMockInterviewHistory()
+   }
+})
+
+onMounted(() => {
+  // 保持原有逻辑
+  setupWatchers()
+  // fetchMockInterviewHistory() // Removed to avoid double fetch
+})
 
 const reportData = ref({
   professionalScore: 85,
@@ -1247,78 +1346,7 @@ const scrollToBottom = () => {
   }, 100)
 }
 
-// 获取用户的模拟面试历史记录
-const fetchMockInterviewHistory = async () => {
-  try {
-    const userId = localStorage.getItem('userId')
-    if (!userId) return
-    
-    // 发送当前选择的style和duration参数
-    const response = await apiClient.get(`/mock-interview/history`, {
-      params: {
-        userId: userId,
-        style: selectedStyle.value,
-        duration: selectedDuration.value
-      }
-    })
-    // 保存历史记录
-    interviewHistory.value = response.data || []
-    console.log('模拟面试历史记录:', interviewHistory.value)
-    
-    // 检查是否有匹配的历史记录，如果有则自动加载
-    checkAndLoadMatchingReport()
-  } catch (error) {
-    console.error('获取模拟面试历史记录失败:', error)
-    if (error.isUnauthorized) {
-      // 401错误，显示请先登录提示，点击确定后跳转到登录页
-      showErrorMessage('请先登录', '提示', () => {
-        router.push('/login')
-      })
-    } else if (error.response && error.response.data.error === 'User not found') {
-      showErrorMessage('请先上传简历进行优化，然后再开始模拟面试', '提示', () => {
-        router.push('/resume')
-      })
-    }
-  }
-}
 
-// 检查并加载匹配的历史记录
-const checkAndLoadMatchingReport = () => {
-  console.log('开始检查匹配的历史记录...')
-  console.log('当前历史记录数量:', interviewHistory.value.length)
-  console.log('当前选择的设置:', {
-    style: selectedStyle.value,
-    duration: selectedDuration.value
-  })
-  
-  if (interviewHistory.value.length === 0) {
-    console.log('没有历史记录，隐藏报告')
-    showReport.value = false
-    return
-  }
-  
-  // 后端已经根据筛选条件返回了最新的一条记录，直接使用即可
-  const matchingHistory = interviewHistory.value[0]
-  console.log('后端返回的历史记录:', matchingHistory)
-  
-  // 检查返回的记录是否与当前选择的设置匹配（使用规范化后的名称进行比较）
-  if (normalizeStyleName(matchingHistory.style) === normalizeStyleName(selectedStyle.value) && 
-      Math.abs(matchingHistory.duration - selectedDuration.value) <= 5) {
-    
-    if (matchingHistory.reportData) {
-      console.log('历史记录包含reportData，开始加载报告')
-      reportData.value = matchingHistory.reportData
-      showReport.value = true
-      console.log('报告已加载，showReport:', showReport.value)
-    } else {
-      console.log('历史记录不包含reportData，跳过加载')
-      showReport.value = false
-    }
-  } else {
-    console.log('后端返回的记录与当前选择的设置不匹配，隐藏报告')
-    showReport.value = false
-  }
-}
 
 onUnmounted(() => {
   if (timer) {

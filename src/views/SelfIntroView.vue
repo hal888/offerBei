@@ -2,8 +2,8 @@
   <div class="self-intro-container">
     <h1>{{ $t('pages.selfIntro.title') }}</h1>
     
-    <!-- 生成中遮盖层 -->
-    <div v-if="isGenerating" class="generating-overlay">
+    <!-- 生成中/加载遮盖层 -->
+    <div v-if="isGenerating || isLoading" class="generating-overlay">
       <div class="loading-container">
         <div class="loading-spinner"></div>
         <h3>{{ t('loading.generatingIntro') }}</h3>
@@ -168,7 +168,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onActivated } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import ErrorMessage from '@/components/ErrorMessage.vue'
@@ -218,44 +218,26 @@ const fontSize = ref('20')
 const bgColor = ref('#000000')
 const teleprompterText = ref(null)
 const isGenerating = ref(false)
+const isLoading = ref(false) // Added loading state
 const estimatedTime = ref('0.5') // 添加estimatedTime的ref，用于接收后端返回的值
 const introTextRef = ref(null)
-
-// 页面加载时自动获取已保存的自我介绍
-onMounted(async () => {
-  try {
-    // 从localStorage获取userId，如果没有则生成一个新的
-    let userId = localStorage.getItem('userId')
-    if (!userId) {
-      userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      localStorage.setItem('userId', userId)
-    }
-    
-    // 调用后端API获取已有的自我介绍数据
-    await fetchSelfIntro()
-  } catch (error) {
-    // 如果没有找到数据或其他错误，忽略，等待用户生成
-    console.log('没有找到已保存的自我介绍数据，或获取失败:', error)
-  }
-})
-
-// 监听语言变化，重置选中的版本和风格
-watch(locale, () => {
-  selectedVersion.value = t('pages.selfIntro.version.elevator')
-  selectedStyle.value = t('pages.selfIntro.style.formal')
-})
 
 // 根据选择的版本和风格获取自我介绍
 const fetchSelfIntro = async () => {
   try {
     let userId = localStorage.getItem('userId')
     if (!userId) return
+
+    isLoading.value = true // Start loading
     
     // 构造introType：版本_风格
     const introType = `${selectedVersion.value}_${selectedStyle.value}`
     
+    // 添加时间戳防止缓存
+    const timestamp = new Date().getTime()
+    
     // 调用后端API获取对应的自我介绍数据
-    const response = await apiClient.post('/self-intro/get', {
+    const response = await apiClient.post(`/self-intro/get?t=${timestamp}`, {
       userId: userId,
       introType: introType
     })
@@ -282,8 +264,29 @@ const fetchSelfIntro = async () => {
     } else {
       generatedIntro.value = ''
     }
+  } finally {
+    isLoading.value = false // Stop loading
   }
 }
+
+// 页面加载时自动获取已保存的自我介绍
+onMounted(async () => {
+  try {
+    // 从localStorage获取userId，如果没有则生成一个新的
+    let userId = localStorage.getItem('userId')
+    
+    // 调用后端API获取已有的自我介绍数据
+    // await fetchSelfIntro() // Removed to avoid double fetch
+  } catch (error) {
+    // 如果没有找到数据或其他错误，忽略，等待用户生成
+    console.log('没有找到已保存的自我介绍数据，或获取失败:', error)
+  }
+})
+
+// 每次组件激活时（包括从其他路由返回时）都重新加载数据
+onActivated(async () => {
+  await fetchSelfIntro()
+})
 
 // 监听版本长度和语言风格的变化，自动获取对应的数据
 watch([selectedVersion, selectedStyle], () => {

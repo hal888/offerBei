@@ -292,8 +292,8 @@ def generate():
         
         # 创建题库记录
         try:
-            # 删除用户旧的题库记录，只保留最新的一条
-            QuestionBank.query.filter_by(user_id=user_id).delete()
+            # 删除用户该数量对应的旧题库记录，只保留最新的一条
+            QuestionBank.query.filter_by(user_id=user_id, count=count).delete()
         except Exception as e:
             print(f"删除旧题库记录失败: {e}")
         

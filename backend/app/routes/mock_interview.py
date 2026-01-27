@@ -398,9 +398,11 @@ def end():
         
         # 保存到数据库
         try:
-            # 删除用户旧的模拟面试记录，只保留最新的一条
             try:
-                MockInterview.query.filter_by(user_id=user_id).delete()
+                # 删除用户该风格及该时长对应的旧模拟面试记录，只保留最新的一条
+                style = session.get('style')
+                duration = session.get('duration')
+                MockInterview.query.filter_by(user_id=user_id, style=style, duration=duration).delete()
             except Exception as e:
                 print(f"删除旧模拟面试记录失败: {e}")
       
@@ -660,8 +662,8 @@ def save_report():
         
         # 创建MockInterview记录
         try:
-            # 删除用户旧的模拟面试记录，只保留最新的一条
-            MockInterview.query.filter_by(user_id=user_id).delete()
+            # 删除用户该风格及该时长对应的旧模拟面试记录，只保留最新的一条
+            MockInterview.query.filter_by(user_id=user_id, style=style, duration=duration).delete()
         except Exception as e:
             print(f"删除旧模拟面试记录失败: {e}")
         

@@ -3,7 +3,7 @@
     <h1>{{ $t('pages.questionBank.title') }}</h1>
     
     <!-- 生成加载遮盖层 -->
-    <div v-if="isGenerating" class="generate-overlay">
+    <div v-if="isGenerating || isLoading" class="generate-overlay">
       <div class="loading-container">
         <div class="loading-spinner"></div>
         <h3>{{ loadingMessage || t('loading.generating') }}</h3>
@@ -138,7 +138,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onActivated, watch } from 'vue' // Modified
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import apiClient from '@/utils/api.js'
@@ -182,6 +182,7 @@ const selectedCount = ref(10)
 const customTopic = ref('')
 const questions = ref([])
 const isGenerating = ref(false)
+const isLoading = ref(false) // Added
 const loadingMessage = ref('')
 
 // 页面加载时自动获取已生成的题库数据
@@ -192,19 +193,12 @@ onMounted(async () => {
     console.warn(`[WARNING] selectedCount=${selectedCount.value}不在允许范围内，重置为50`)
     selectedCount.value = 50
   }
-  try {
-    // 从localStorage获取userId
-    const userId = localStorage.getItem('userId')
-    
-    // 如果没有userId，不自动加载数据（等待用户第一次生成）
-    if (!userId) return
-    
-    // 调用后端API获取已生成的题库数据（不阻塞页面渲染）
-    fetchQuestionBank()  // 移除await，让请求在后台进行，不阻塞页面加载
-  } catch (error) {
-    console.log('获取已生成题库失败:', error)
-    // 忽略错误，等待用户手动生成
-  }
+  // await fetchQuestionBank() // Removed to avoid double fetch
+})
+
+// 每次组件激活时（包括从其他路由返回时）都重新加载数据
+onActivated(async () => {
+  await fetchQuestionBank()
 })
 
 // 根据选择的数量获取题库数据
@@ -215,9 +209,16 @@ const fetchQuestionBank = async () => {
     
     // 如果没有userId，不获取数据
     if (!userId) return
+
+    // 显示加载状态
+    isLoading.value = true
+    loadingMessage.value = t('loading.generatingBank') // 可以添加一个新的翻译key，或者复用
+    
+    // 添加时间戳防止缓存
+    const timestamp = new Date().getTime()
     
     // 调用后端API获取已生成的题库数据，不传递resumeId参数
-    const response = await apiClient.post('/question-bank/get', {
+    const response = await apiClient.post(`/question-bank/get?t=${timestamp}`, {
       userId: userId,
       count: selectedCount.value  // 传递选择的题目数量
     })
@@ -245,6 +246,8 @@ const fetchQuestionBank = async () => {
       })
     }
     // 其他错误忽略，等待用户手动生成
+  } finally {
+    isLoading.value = false
   }
 }
 

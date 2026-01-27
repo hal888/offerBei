@@ -101,14 +101,9 @@ def parse_resume_result(content):
         
         # 提取诊断意见
         if 'diagnosis' in json_result and isinstance(json_result['diagnosis'], list):
-            # 支持中英文诊断类型
-            valid_types_zh = ['警告', '错误', '建议']
-            valid_types_en = ['warning', 'error', 'suggestion']
-            valid_types = valid_types_zh + valid_types_en
             for item in json_result['diagnosis']:
                 if isinstance(item, dict) and \
-                   all(k in item for k in ['type', 'title', 'description']) and \
-                   item['type'] in valid_types:
+                   all(k in item for k in ['type', 'title', 'description']):
                     result['diagnosis'].append({
                         "type": item['type'],
                         "title": item['title'],

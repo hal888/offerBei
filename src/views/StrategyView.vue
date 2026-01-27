@@ -362,7 +362,9 @@ const generateQuestions = () => {
 const fetchAnalysisHistory = async () => {
   // 后端会从JWT token中自动获取user_id，不需要从前端传递
   try {
-    const response = await apiClient.get(`/strategy/analysis/history`)
+    // 添加时间戳防止缓存
+    const timestamp = new Date().getTime()
+    const response = await apiClient.get(`/strategy/analysis/history?t=${timestamp}`)
     if (response.data && response.data.length > 0) {
       // 使用最新的分析结果
       analysisResult.value = response.data[0].result
@@ -391,7 +393,9 @@ const fetchAnalysisHistory = async () => {
 const fetchQuestionsHistory = async () => {
   // 后端会从JWT token中自动获取user_id，不需要从前端传递
   try {
-    const response = await apiClient.get(`/strategy/questions/history`)
+    // 添加时间戳防止缓存
+    const timestamp = new Date().getTime()
+    const response = await apiClient.get(`/strategy/questions/history?t=${timestamp}`)
     if (response.data && response.data.length > 0) {
       // 使用最新的问题结果
       generatedQuestions.value = response.data[0].result.questions || []
@@ -425,16 +429,23 @@ const fetchQuestionsHistory = async () => {
 
 // 统一加载历史数据的函数
 const loadHistoryData = async () => {
+  // 先清空显示，给用户正在加载的视觉反馈（可选，这里不清空体验更好）
+  // 仅显示加载状态
+  isLoading.value = true
+  loadingMessage.value = t('loading.generatingAnalysis') // 复用加载文字，或者用 "正在加载历史数据..."
+
   // 同时获取画像分析历史和反问问题历史
   await Promise.all([
     fetchAnalysisHistory(),
     fetchQuestionsHistory()
   ])
+  
+  isLoading.value = false
 }
 
 // 页面加载时自动获取已有的面试策略内容
 onMounted(async () => {
-  await loadHistoryData()
+  // await loadHistoryData() // Removed to avoid double fetch
 })
 
 // 每次组件激活时（包括从其他路由返回时）都重新加载数据
@@ -493,7 +504,7 @@ const exportStrategy = async () => {
       const resultContent = document.createElement('div')
       resultContent.className = 'result-content'
       
-      analysisResult.value.sections.forEach(section => {
+      analysisResult.value.sections.forEach(section => {     
         const sectionDiv = document.createElement('div')
         sectionDiv.className = 'result-section'
         sectionDiv.style.marginBottom = '25px'

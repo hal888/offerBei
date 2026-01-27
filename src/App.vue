@@ -320,7 +320,11 @@ onMounted(async () => {
 
     <!-- Main Content -->
     <main class="main-content">
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <keep-alive>
+          <component :is="Component" v-if="Component" :key="route.path" />
+        </keep-alive>
+      </router-view>
     </main>
 
 

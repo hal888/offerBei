@@ -33,6 +33,8 @@ PROMPTS = {
 1. 使用清晰的Markdown层级
 2. 重点突出量化结果
 3. **Markdown文本中的换行必须显式写为\\n**
+4. **如果原简历包含项目经历部分，则在优化后的简历中必须保留该部分，但需对项目描述内容进行深度润色和优化（如采用STAR法则、强化量化成果）**
+5. **保持原简历的整体结构完整**（包括个人信息、教育背景、工作经历、项目经历、技能评价等）
 
 ## 输出规则（极其重要）：
 1. **只输出纯JSON**，禁止禁止包含```json标记
@@ -199,10 +201,13 @@ PROMPTS = {
         'strategy': {
             'analysis_system': '''你是一位面试策略分析师。请分析并以纯JSON返回报告。
 
-## 关键规则：
-1. **只输出纯JSON**
-2. **字符串内禁止双引号**
-3. **内容必须是中文**''',
+## 关键规则（必须严格遵守）：
+1. **只输出纯JSON**，不要包含任何markdown标记（如```json）、解释性文字或注释
+2. **JSON必须是单行或格式良好的多行**，不要在字符串值中间换行
+3. **字符串值中禁止使用双引号**，如需引用请使用单引号或中文引号
+4. **字符串值中的换行必须转义为\\n**
+5. **确保JSON语法正确**：正确闭合所有括号，无尾随逗号
+6. **输出必须以{开头，以}结尾**''',
             'analysis_template': '''基于以下信息生成画像分析报告：
 
 ## 信息：
@@ -211,12 +216,13 @@ PROMPTS = {
 方向：{directions}
 
 ## 输出规则（极其重要）：
-1. **只输出纯JSON**
-2. **格式必须严格匹配示例**
-3. **内容务必详尽**
+1. **只输出纯JSON**，禁止包含```json标记、解释文字
+2. 严格按照JSON格式输出，**字符串内换行必须转义为\\n**
+3. 所有文本内容（title、content、tips）必须使用**中文**
+4. 格式必须严格匹配示例
 
-## 精确输出格式：
-{{"sections": [{{"title": "标题", "content": "内容", "tips": ["建议1"]}}]}}
+## 精确输出格式（直接复制结构）：
+{{"sections": [{{"title": "标题", "content": "内容（换行用\\n表示）", "tips": ["建议1"]}}]}}
 
 直接输出JSON：''',
             
@@ -268,6 +274,8 @@ PROMPTS = {
 1. Use clear Markdown hierarchy
 2. Highlight quantified results
 3. **Line breaks in Markdown text MUST be escaped as \\n**
+4. **If the original resume contains a Project Experience section, it MUST be retained in the optimized resume, but the content should be polished and optimized (e.g., using STAR method, quantifying results)**
+5. **Preserve the overall structure of the original resume** (Personal Info, Education, Work Experience, Project Experience, Skills, etc.)
 
 ## Output Rules (EXTREMELY IMPORTANT):
 1. **Output ONLY pure JSON** - NO ```json markers
@@ -667,10 +675,10 @@ Output Format:
         'strategy': {
             'analysis_system': '''You are a strategy analyst. Please analyze and return report in pure JSON.
 
-## Critical Rules:
-1. **Output ONLY pure JSON**
-2. **NO double quotes inside strings**
-3. **Content in English**''',
+## Critical Rules (MUST follow strictly):
+1. **Output ONLY pure JSON** - no markdown markers, explanatory text
+2. **NO double quotes inside string values**
+3. **Line breaks in strings must be escaped as \\n**''',
             'analysis_template': '''Generate profile analysis report.
 
 ## Info:
@@ -681,9 +689,10 @@ Directions: {directions}
 ## Output Rules (EXTREMELY IMPORTANT):
 1. **Output ONLY pure JSON**
 2. **Strictly match example format**
+3. **Escape newlines in strings as \\n**
 
 ## Exact Output Format:
-{{"sections": [{{"title": "Title", "content": "Content", "tips": ["Tip1"]}}]}}
+{{"sections": [{{"title": "Title", "content": "Content with escaped \\n", "tips": ["Tip1"]}}]}}
 
 Directly output JSON:''',
             

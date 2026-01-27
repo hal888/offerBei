@@ -79,15 +79,68 @@ def analysis():
             import re
             # 移除所有控制字符，除了制表符、换行符和回车符
             json_content = re.sub(r'[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]', '', json_content)
-            
             # 清理JSON字符串中的中文引号
             json_content = re.sub(r'[“”]', '"', json_content)
             json_content = re.sub(r'[‘’]', "'", json_content)
             # 移除JSON字符串前后的空格
             json_content = json_content.strip()
-            
-            # 尝试解析JSON
-            result = json.loads(json_content)
+
+            try:
+                result = json.loads(json_content)
+            except json.JSONDecodeError as e:
+                print(f"[DEBUG] JSON解析失败，尝试修复: {e}")
+                # 尝试修复：处理字段值中未转义的换行符和双引号
+                
+                # 1. 临时替换换行符，防止正则匹配不到多行内容
+                # 注意：这里我们主要处理 string value 内部的换行
+                
+                # 更复杂的修复逻辑：
+                # 我们假设结构是大体正确的，主要问题是 "content": "..." 内部的内容包含 " 或 \n
+                
+                def fix_json_value(match):
+                    key = match.group(1)
+                    val = match.group(2)
+                    
+                    # 1. 转义内部的双引号 (排除已经是转义的 \")
+                    # 先把 \" 保护起来
+                    val = val.replace('\\"', '《TEMP_QUOTE》')
+                    # 把剩余的 " 变成 \"
+                    val = val.replace('"', '\\"')
+                    # 还原 \"
+                    val = val.replace('《TEMP_QUOTE》', '\\"')
+                    
+                    # 2. 转义换行符
+                    val = val.replace('\n', '\\n').replace('\r', '')
+                    
+                    return f'"{key}": "{val}"'
+
+                # 匹配 "key": "value" 模式，value 可以包含换行，但非贪婪匹配可能在内部 " 处停止
+                # 这种正则很难完美，针对特定字段进行修复可能更稳妥
+                # 这里针对 "content" 和 "tips" 这种长文本字段做特殊处理
+                
+                fixed_content = json_content
+                
+                # 针对 content 字段修复: "content": "..."
+                # 试图匹配 "content":\s*"  到  "(?:\s*[,}]) 之间的内容
+                # 这是一个简化的启发式修复
+                
+                # 方案 B：使用更通用的字符替换
+                # 如果是 expecting ',' delimiter，通常意味着在字符串内部遇到了双引号
+                
+                # 尝试先转义换行符
+                fixed_content = re.sub(r'(?<=: ")(.*?)(?=")', lambda m: m.group(1).replace('\n', '\\n'), fixed_content, flags=re.DOTALL)
+                
+                try:
+                    result = json.loads(fixed_content)
+                except:
+                   # 最后的兜底：如果还是失败，尝试用 dirty-json 或者手动提取
+                   # 这里简化处理，如果实在解不开，返回默认值前再尝试一次暴力清理
+                   fixed_content_2 = json_content.replace('\n', '\\n')
+                   try:
+                       result = json.loads(fixed_content_2)
+                   except:
+                       raise e
+
         except json.JSONDecodeError as e:
             print(f"JSON解析错误: {e}")
             print(f"完整的JSON内容: {json_content}")

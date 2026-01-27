@@ -2,8 +2,8 @@
   <div class="resume-container">
     <h1>{{ $t('pages.resume.title') }}</h1>
     
-    <!-- 上传加载遮盖层 -->
-    <div v-if="isUploading" class="upload-overlay">
+    <!-- 上传/加载遮盖层 -->
+    <div v-if="isUploading || isLoading" class="upload-overlay">
       <div class="loading-container">
         <div class="loading-spinner"></div>
         <h3>{{ loadingMessage || t('loading.resumeUploading') }}</h3>
@@ -69,16 +69,16 @@
           <div class="optimization-tabs">
             <button 
               v-for="tab in optimizationTabs" 
-              :key="tab" 
-              :class="['tab-btn', { active: activeTab === tab }]" 
-              @click="activeTab = tab"
+              :key="tab.key" 
+              :class="['tab-btn', { active: activeTab === tab.key }]" 
+              @click="activeTab = tab.key"
             >
-              {{ tab }}
+              {{ tab.label }}
             </button>
           </div>
 
           <div class="optimization-content">
-            <div v-if="activeTab === $t('pages.resume.tabs.star')" class="star-rewrite">
+            <div v-if="activeTab === 'star'" class="star-rewrite">
               <h4>{{ $t('pages.resume.star.title') }}</h4>
               <div v-if="resumeData.starRewrite && resumeData.starRewrite.length > 0" class="star-list">
                 <div v-for="(item, index) in resumeData.starRewrite" :key="index" class="star-item optimized">
@@ -105,7 +105,7 @@
               </div>
             </div>
 
-            <div v-if="activeTab === $t('pages.resume.tabs.keyword')" class="keyword-injection">
+            <div v-if="activeTab === 'keyword'" class="keyword-injection">
               <h4>{{ $t('pages.resume.keyword.title') }}</h4>
               <div class="keyword-list">
                 <div class="keyword-item" v-for="(keyword, index) in resumeData.keywords" :key="index">
@@ -253,10 +253,10 @@ const initMarkedAndHighlight = async () => {
 }
 
 const resumeData = ref(null)
-const activeTab = ref(t('pages.resume.tabs.star'))
+const activeTab = ref('star')
 const optimizationTabs = computed(() => [
-  t('pages.resume.tabs.star'),
-  t('pages.resume.tabs.keyword')
+  { key: 'star', label: t('pages.resume.tabs.star') },
+  { key: 'keyword', label: t('pages.resume.tabs.keyword') }
 ])
 const isUploading = ref(false)
 const loadingMessage = ref('')
@@ -267,6 +267,8 @@ const recentFilesError = ref('')
 const fileInputGeneric = ref(null)
 const fileInputCamera = ref(null)
 const fileInputGallery = ref(null)
+
+const isLoading = ref(false) // Added loading state
 
 // 错误提示相关
 const showError = ref(false)
@@ -310,19 +312,20 @@ const checkLoginStatus = () => {
   }
 }
 
-// 页面加载时自动获取最新的简历优化内容
-onMounted(async () => {
-  checkLoginStatus()
-  
+// 获取最新简历数据
+const fetchResumeData = async () => {
   const userId = localStorage.getItem('userId')
-  
   if (userId) {
+    isLoading.value = true // Start loading
     try {
       // 从localStorage获取resumeId
       const resumeId = localStorage.getItem('resumeId')
       
+      // 添加时间戳防止缓存
+      const timestamp = new Date().getTime()
+      
       // 调用后端API获取最新的简历数据，使用相对路径，自动适配不同环境
-      const response = await apiClient.post('/resume/get', {
+      const response = await apiClient.post(`/resume/get?t=${timestamp}`, {
           resumeId: resumeId
       })
     
@@ -341,8 +344,17 @@ onMounted(async () => {
           router.push('/login')
         })
       }
+    } finally {
+      isLoading.value = false // Stop loading
     }
   }
+}
+
+// 页面加载时自动获取最新的简历优化内容
+onMounted(async () => {
+  checkLoginStatus()
+  
+  // fetchResumeData call removed to avoid double fetch with KeepAlive (handled by onActivated)
   
   // 异步加载最近文件，不阻塞主线程
   setTimeout(() => {
@@ -350,9 +362,10 @@ onMounted(async () => {
   }, 100)
 })
 
-// 每次组件激活时（包括首次挂载和从其他路由返回时）都检查登录状态
-onActivated(() => {
+// 每次组件激活时（包括首次挂载和从其他路由返回时）都检查登录状态并重新加载数据
+onActivated(async () => {
   checkLoginStatus()
+  await fetchResumeData()
 })
 
 const handleFileUpload = (event) => {
